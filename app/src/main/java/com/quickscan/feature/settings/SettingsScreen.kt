@@ -104,13 +104,10 @@ fun SettingsScreen(
     var imagesGranted by remember {
         mutableStateOf(context.isGranted(Manifest.permission.READ_MEDIA_IMAGES))
     }
+    val supportsNotifications = Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
     var notificationsGranted by remember {
         mutableStateOf(
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                context.isGranted(Manifest.permission.POST_NOTIFICATIONS)
-            } else {
-                true
-            },
+            supportsNotifications && context.isGranted(Manifest.permission.POST_NOTIFICATIONS),
         )
     }
 
@@ -298,22 +295,26 @@ fun SettingsScreen(
                     title = stringResource(R.string.permission_notifications),
                     background = palette.surface,
                     onClick = {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                            !notificationsGranted
-                        ) {
-                            notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                        } else {
+                        if (!supportsNotifications) {
                             context.openAppSettings()
+                        } else if (notificationsGranted) {
+                            context.openAppSettings()
+                        } else {
+                            notificationsLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                         }
                     },
                     trailing = {
                         QSValueSlot(
                             value = when {
-                                !notificationsGranted &&
-                                    Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU ->
-                                    stringResource(R.string.permission_off)
+                                // Below Android 13 there is no runtime
+                                // permission and the app posts nothing.
+                                !supportsNotifications ->
+                                    stringResource(R.string.permission_not_used)
 
-                                else -> stringResource(R.string.permission_allowed)
+                                notificationsGranted ->
+                                    stringResource(R.string.permission_allowed)
+
+                                else -> stringResource(R.string.permission_off)
                             },
                         )
                     },
@@ -381,11 +382,10 @@ fun SettingsScreen(
 private fun ProfileCard(name: String) {
     val palette = QsTheme.palette
     val displayName = name.ifBlank { stringResource(R.string.settings_profile_placeholder) }
-    val initials = displayName.trim().split(" ")
+    val initials = name.trim().split(" ")
         .filter { it.isNotBlank() }
         .take(2)
         .joinToString("") { it.first().uppercase() }
-        .ifBlank { "·" }
 
     Row(
         modifier = Modifier
@@ -404,11 +404,20 @@ private fun ProfileCard(name: String) {
                 .background(palette.accentTint),
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = initials,
-                style = QsTheme.text.title18,
-                color = palette.accentTintInk,
-            )
+            if (initials.isBlank()) {
+                Icon(
+                    imageVector = LucideUser,
+                    contentDescription = null,
+                    tint = palette.accentTintInk,
+                    modifier = Modifier.size(24.dp),
+                )
+            } else {
+                Text(
+                    text = initials,
+                    style = QsTheme.text.title18,
+                    color = palette.accentTintInk,
+                )
+            }
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(text = displayName, style = QsTheme.text.nav16, color = palette.ink)

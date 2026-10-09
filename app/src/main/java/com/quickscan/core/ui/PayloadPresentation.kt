@@ -110,12 +110,10 @@ object ScanDates {
     fun detailTime(timestamp: Long): String {
         val calendar = Calendar.getInstance().apply { timeInMillis = timestamp }
         val today = Calendar.getInstance()
+        // Lower-case: this is read mid-sentence, e.g. "Scanned today, 9:41 AM".
         val prefix = when {
-            isSameDay(calendar, today) -> "Today"
-            calendar.get(Calendar.YEAR) == today.get(Calendar.YEAR) ->
-                formatter("d MMM").format(Date(timestamp))
-
-            else -> formatter("d MMM yyyy").format(Date(timestamp))
+            isSameDay(calendar, today) -> "today"
+            else -> formatter("d MMM").format(Date(timestamp))
         }
         return "$prefix, ${formatter("h:mm a").format(Date(timestamp))}"
     }

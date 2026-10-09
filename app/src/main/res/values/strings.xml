@@ -67,6 +67,7 @@
     <string name="detail_source">Source</string>
     <string name="source_camera">Camera</string>
     <string name="source_image">Image</string>
+    <string name="source_manual">Typed in</string>
     <string name="characters">%1$d characters</string>
     <string name="copy_action">Copy to clipboard</string>
     <string name="copied">Copied</string>
@@ -132,6 +133,8 @@
     <string name="create_field_label">Label</string>
     <string name="create_field_url">URL</string>
     <string name="create_field_note">Note</string>
+    <string name="create_note_placeholder">Optional caption</string>
+    <string name="create_text_placeholder">Any message</string>
     <string name="create_field_text">Text</string>
     <string name="create_field_ssid">Network name</string>
     <string name="create_field_password">Password</string>
@@ -181,6 +184,7 @@
     <string name="permission_allowed">Allowed</string>
     <string name="permission_denied">Denied</string>
     <string name="permission_off">Off</string>
+    <string name="permission_not_used">Not used</string>
     <string name="setting_version">Version</string>
     <string name="setting_whats_new">What\'s new</string>
 

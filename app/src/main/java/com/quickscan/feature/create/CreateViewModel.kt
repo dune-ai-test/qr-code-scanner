@@ -132,7 +132,7 @@ class CreateViewModel @Inject constructor(
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {
             val parsed = PayloadParser.parse(snapshot.payload)
-            scanRepository.record(parsed, ScanSource.Image)
+            scanRepository.record(parsed, ScanSource.Manual)
             _state.update { it.copy(saving = false) }
             _events.send(CreateEvent.Saved(snapshot.payload))
         }

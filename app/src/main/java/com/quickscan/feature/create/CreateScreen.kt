@@ -39,7 +39,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quickscan.R
 import com.quickscan.core.ui.component.LucideCheck
-import com.quickscan.core.ui.component.LucideChevronRight
 import com.quickscan.core.ui.component.LucideLink
 import com.quickscan.core.ui.component.LucidePalette
 import com.quickscan.core.ui.component.LucideType
@@ -50,12 +49,16 @@ import com.quickscan.core.ui.component.QSPrimaryButton
 import com.quickscan.core.ui.component.QSSwitch
 import com.quickscan.core.ui.component.QSTextField
 import com.quickscan.core.ui.component.QrCodeView
+import com.quickscan.core.ui.component.QrPlaceholderView
 import com.quickscan.core.ui.component.StatusBarSpacer
 import com.quickscan.core.ui.component.QSTabBar
 import com.quickscan.core.ui.component.TabDestination
 import com.quickscan.core.ui.theme.QsTheme
 import com.quickscan.core.ui.theme.Radius
 import com.quickscan.core.ui.theme.Space
+
+/** Decorative art behind the preview while no payload is entered yet. */
+private const val PREVIEW_PLACEHOLDER_SEED = 5_517_204L
 
 @Composable
 fun CreateScreen(
@@ -124,7 +127,6 @@ fun CreateScreen(
                     value = state.label,
                     onValueChange = viewModel::setLabel,
                     label = stringResource(R.string.create_field_label),
-                    placeholder = stringResource(R.string.create_field_label),
                 )
 
                 when (state.type) {
@@ -141,7 +143,7 @@ fun CreateScreen(
                             value = state.note,
                             onValueChange = viewModel::setNote,
                             label = stringResource(R.string.create_field_note),
-                            placeholder = stringResource(R.string.create_field_note),
+                            placeholder = stringResource(R.string.create_note_placeholder),
                         )
                     }
 
@@ -149,7 +151,7 @@ fun CreateScreen(
                         value = state.text,
                         onValueChange = viewModel::setText,
                         label = stringResource(R.string.create_field_text),
-                        placeholder = stringResource(R.string.create_field_text),
+                        placeholder = stringResource(R.string.create_text_placeholder),
                         singleLine = false,
                     )
 
@@ -158,7 +160,6 @@ fun CreateScreen(
                             value = state.ssid,
                             onValueChange = viewModel::setSsid,
                             label = stringResource(R.string.create_field_ssid),
-                            placeholder = stringResource(R.string.create_field_ssid),
                         )
                         QSTextField(
                             value = state.password,
@@ -184,7 +185,6 @@ fun CreateScreen(
                             value = state.contactName,
                             onValueChange = viewModel::setContactName,
                             label = stringResource(R.string.create_field_name),
-                            placeholder = stringResource(R.string.create_field_name),
                         )
                         QSTextField(
                             value = state.contactPhone,
@@ -242,7 +242,11 @@ private fun PreviewCard(payload: String, caption: String) {
                 .padding(9.dp),
         ) {
             if (payload.isBlank()) {
-                Box(Modifier.fillMaxSize())
+                QrPlaceholderView(
+                    seed = PREVIEW_PLACEHOLDER_SEED,
+                    foreground = palette.hairline,
+                    modifier = Modifier.fillMaxSize(),
+                )
             } else {
                 QrCodeView(
                     content = payload,
@@ -397,12 +401,6 @@ private fun StyleRow() {
             style = QsTheme.text.body14.copy(fontWeight = FontWeight.Medium),
             color = palette.ink,
             modifier = Modifier.weight(1f),
-        )
-        Icon(
-            imageVector = LucideChevronRight,
-            contentDescription = null,
-            tint = palette.inkFaint,
-            modifier = Modifier.size(16.dp),
         )
     }
 }

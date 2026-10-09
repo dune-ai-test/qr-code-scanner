@@ -36,6 +36,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
@@ -109,6 +110,7 @@ fun ScannerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
+    val listState = rememberLazyListState()
 
     var hasCameraPermission by remember {
         mutableStateOf(context.hasCameraPermission())
@@ -162,6 +164,11 @@ fun ScannerScreen(
         onDispose { runCatching { toneGenerator?.release() } }
     }
 
+    // The paste card is inserted below the fold, so bring it into view.
+    LaunchedEffect(state.pasteOpen) {
+        if (state.pasteOpen) listState.animateScrollToItem(PASTE_CARD_ITEM)
+    }
+
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
             when (event) {
@@ -188,6 +195,7 @@ fun ScannerScreen(
         StatusBarSpacer()
 
         LazyColumn(
+            state = listState,
             modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(Space.x2xl),
         ) {
@@ -620,9 +628,11 @@ private fun PasteLinkCard(
         QSTextField(
             value = value,
             onValueChange = onValueChange,
-            label = stringResource(R.string.paste_link_hint),
+            label = stringResource(R.string.create_field_url),
+            placeholder = stringResource(R.string.paste_link_hint),
             height = 56.dp,
             radius = Radius.lg,
+            background = palette.surfaceElevated,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(Space.md)) {
             QSPrimaryButton(
@@ -635,11 +645,15 @@ private fun PasteLinkCard(
                 label = stringResource(R.string.setting_cancel),
                 onClick = onDismiss,
                 ink = palette.ink,
+                container = palette.surfaceElevated,
                 modifier = Modifier.width(110.dp),
             )
         }
     }
 }
+
+/** Item index of the paste card: viewfinder, headline, tiles, paste. */
+private const val PASTE_CARD_ITEM = 3
 
 private const val TONE_VOLUME = 80
 

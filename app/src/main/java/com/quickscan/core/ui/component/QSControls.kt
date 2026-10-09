@@ -301,6 +301,7 @@ fun QSTextField(
     keyboardType: KeyboardType = KeyboardType.Text,
     imeAction: ImeAction = ImeAction.Next,
     isPassword: Boolean = false,
+    background: Color = QsTheme.palette.surface,
     trailing: @Composable (() -> Unit)? = null,
 ) {
     val palette = QsTheme.palette
@@ -323,7 +324,7 @@ fun QSTextField(
                 .fillMaxWidth()
                 .height(height)
                 .clip(radius)
-                .background(palette.surface)
+                .background(background)
                 .border(1.5.dp, borderColor, radius)
                 .padding(horizontal = Space.xl),
             horizontalArrangement = Arrangement.spacedBy(Space.md),

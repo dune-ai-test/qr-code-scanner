@@ -124,7 +124,7 @@ class ScannerViewModel @Inject constructor(
             return
         }
         _state.update { it.copy(pasteOpen = false, pasteText = "") }
-        accept(DecodedCode(candidate, "QR_CODE"), ScanSource.Image)
+        accept(DecodedCode(candidate, "QR_CODE"), ScanSource.Manual)
     }
 
     fun onTorchChanged(on: Boolean) = _state.update { it.copy(torchOn = on) }

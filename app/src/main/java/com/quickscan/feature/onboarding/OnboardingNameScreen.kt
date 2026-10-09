@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,6 +54,12 @@ fun OnboardingNameScreen(
     val palette = QsTheme.palette
     val text = QsTheme.text
 
+    // Navigate only once the write has landed, otherwise leaving the screen
+    // cancels it and onboarding replays on the next launch.
+    LaunchedEffect(Unit) {
+        viewModel.events.collect { onContinue() }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -66,10 +73,7 @@ fun OnboardingNameScreen(
             onBack = onBack,
             actionIcon = LucideCheck,
             actionDescription = stringResource(R.string.continue_label),
-            onAction = {
-                viewModel.complete()
-                onContinue()
-            },
+            onAction = { viewModel.complete() },
         )
 
         Column(
@@ -144,10 +148,7 @@ fun OnboardingNameScreen(
 
             QSPrimaryButton(
                 label = stringResource(R.string.continue_label),
-                onClick = {
-                    viewModel.complete()
-                    onContinue()
-                },
+                onClick = { viewModel.complete() },
                 icon = LucideArrowRight,
                 enabled = !state.saving,
                 modifier = Modifier.fillMaxWidth(),
@@ -159,10 +160,7 @@ fun OnboardingNameScreen(
                 color = palette.inkFaint,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable {
-                        viewModel.complete("")
-                        onContinue()
-                    },
+                    .clickable { viewModel.complete("") },
                 textAlign = TextAlign.Center,
             )
         }

@@ -535,7 +535,11 @@ private fun DetailsCard(
         QSDetailRow(
             label = stringResource(R.string.detail_source),
             value = stringResource(
-                if (entity.source == "Image") R.string.source_image else R.string.source_camera,
+                when (entity.source) {
+                    "Image" -> R.string.source_image
+                    "Manual" -> R.string.source_manual
+                    else -> R.string.source_camera
+                },
             ),
         )
     }

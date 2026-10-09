@@ -12,7 +12,7 @@ import java.util.Calendar
 import java.util.TimeZone
 import java.util.concurrent.TimeUnit
 
-enum class ScanSource { Camera, Image }
+enum class ScanSource { Camera, Image, Manual }
 
 enum class ScanFilter {
     All,
