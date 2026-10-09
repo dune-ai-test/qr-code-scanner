@@ -10,7 +10,7 @@ import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.core.util.Size
+import android.util.Size
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.quickscan.data.barcode.DecodedCode
