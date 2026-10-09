@@ -53,6 +53,9 @@ private data class AccentSet(
     val accentOn: Color,
     val tint: Color,
     val tintInk: Color,
+    /** Dark mode needs its own tint; the light one is near-white. */
+    val tintDark: Color,
+    val tintInkDark: Color,
 )
 
 /** The swatch colour shown for this accent in the Settings picker. */
@@ -62,10 +65,41 @@ fun Accent.swatch(): Color = Set().accent
 fun Accent.swatchOn(): Color = Set().accentOn
 
 private fun Accent.Set() = when (this) {
-    Accent.Ocean -> AccentSet(Color(0xFF3D8FD1), Color(0xFFFFFFFF), Color(0xFFE5F0F9), Color(0xFF2F77B4))
-    Accent.Indigo -> AccentSet(Color(0xFF5B5BD6), Color(0xFFFFFFFF), Color(0xFFEBEBFA), Color(0xFF4A4AC4))
-    Accent.Moss -> AccentSet(Color(0xFF3F8F5B), Color(0xFFFFFFFF), Color(0xFFE4F1EA), Color(0xFF2E7A4A))
-    Accent.Clay -> AccentSet(Color(0xFFC4632B), Color(0xFFFFFFFF), Color(0xFFFAEFE2), Color(0xFFB25A24))
+    Accent.Ocean -> AccentSet(
+        accent = Color(0xFF3D8FD1),
+        accentOn = Color(0xFFFFFFFF),
+        tint = Color(0xFFE5F0F9),
+        tintInk = Color(0xFF2F77B4),
+        tintDark = Color(0xFF17334A),
+        tintInkDark = Color(0xFF8CC4EC),
+    )
+
+    Accent.Indigo -> AccentSet(
+        accent = Color(0xFF5B5BD6),
+        accentOn = Color(0xFFFFFFFF),
+        tint = Color(0xFFEBEBFA),
+        tintInk = Color(0xFF4A4AC4),
+        tintDark = Color(0xFF26265A),
+        tintInkDark = Color(0xFFA6A6F2),
+    )
+
+    Accent.Moss -> AccentSet(
+        accent = Color(0xFF3F8F5B),
+        accentOn = Color(0xFFFFFFFF),
+        tint = Color(0xFFE4F1EA),
+        tintInk = Color(0xFF2E7A4A),
+        tintDark = Color(0xFF16341F),
+        tintInkDark = Color(0xFF86D2A4),
+    )
+
+    Accent.Clay -> AccentSet(
+        accent = Color(0xFFC4632B),
+        accentOn = Color(0xFFFFFFFF),
+        tint = Color(0xFFFAEFE2),
+        tintInk = Color(0xFFB25A24),
+        tintDark = Color(0xFF3A2314),
+        tintInkDark = Color(0xFFE8A96C),
+    )
 }
 
 internal fun lightPalette(preset: Accent) = with(preset.Set()) {
@@ -112,8 +146,8 @@ internal fun darkPalette(preset: Accent) = with(preset.Set()) {
         hairline = Color(0xFF2A2E35),
         accent = accent,
         accentOn = Color(0xFF0B0C0F),
-        accentTint = tint,
-        accentTintInk = lighten(tintInk),
+        accentTint = tintDark,
+        accentTintInk = tintInkDark,
         successSurface = Color(0xFF16281E),
         successInk = Color(0xFF8FD6AC),
         successIcon = Color(0xFF4ADE80),
@@ -131,13 +165,5 @@ internal fun darkPalette(preset: Accent) = with(preset.Set()) {
         shadow = Color(0x66000000),
     )
 }
-
-/** Blend a colour toward white so dark-mode tints keep their hue but gain contrast. */
-private fun lighten(color: Color, amount: Float = 0.42f) = Color(
-    red = color.red + (1f - color.red) * amount,
-    green = color.green + (1f - color.green) * amount,
-    blue = color.blue + (1f - color.blue) * amount,
-    alpha = color.alpha,
-)
 
 val LocalQsPalette = staticCompositionLocalOf { lightPalette(Accent.Ocean) }

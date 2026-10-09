@@ -11,6 +11,7 @@ import com.quickscan.data.repository.ScanRepository
 import com.quickscan.data.repository.ScanSource
 import com.quickscan.data.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 data class ScannerUiState(
@@ -91,7 +93,7 @@ class ScannerViewModel @Inject constructor(
         if (_state.value.busy) return
         _state.update { it.copy(busy = true) }
         viewModelScope.launch {
-            val code = decoder.decode(bitmap)
+            val code = withContext(Dispatchers.Default) { decoder.decode(bitmap) }
             if (code == null) {
                 _state.update { it.copy(busy = false) }
                 _events.send(ScannerEvent.Message(ScannerMessage.NoCodeInImage))

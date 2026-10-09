@@ -52,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -344,6 +345,9 @@ private fun Viewfinder(
         modifier = modifier
             .fillMaxWidth()
             .height(466.dp)
+            // The camera surface would otherwise bleed past the viewfinder and
+            // paint over the headline below it.
+            .clipToBounds()
             .background(palette.scene),
     ) {
         if (hasPermission) {
@@ -587,8 +591,8 @@ private fun PermissionPrompt(
         QSPrimaryButton(
             label = stringResource(R.string.camera_permission_action),
             onClick = onRequestPermission,
-            container = Color.White,
-            content = palette.ink,
+            container = palette.ink,
+            content = palette.bg,
             modifier = Modifier.fillMaxWidth(),
         )
         QSSecondaryButton(

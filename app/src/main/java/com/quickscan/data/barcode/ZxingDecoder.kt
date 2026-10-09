@@ -1,6 +1,7 @@
 package com.quickscan.data.barcode
 
 import android.graphics.Bitmap
+import android.graphics.ImageFormat
 import androidx.camera.core.ImageProxy
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.BinaryBitmap
@@ -18,16 +19,20 @@ data class DecodedCode(
 /**
  * On-device decoding for camera frames and gallery images. ZXing is pure Java
  * and makes no network calls, which is what keeps the whole flow local.
+ *
+ * Deliberately stateless. A ZXing reader carries mutable per-image state and is
+ * not thread-safe, and this class is a singleton reached from two places: the
+ * CameraX analysis executor for every frame, and the main thread when a
+ * gallery image is decoded. Sharing one reader across those threads silently
+ * corrupts it and nothing ever decodes, so each call builds its own reader.
  */
 class ZxingDecoder {
 
-    private val reader = MultiFormatReader().apply { setHints(HINTS) }
-
-    /** Decodes the luminance plane of a YUV_420_888 camera frame. */
+    /** Decodes the luminance plane of a YUV camera frame. */
     fun decode(image: ImageProxy): DecodedCode? {
-        if (image.format != android.graphics.ImageFormat.YUV_420_888 &&
-            image.format != android.graphics.ImageFormat.YUV_422_888 &&
-            image.format != android.graphics.ImageFormat.YUV_444_888
+        if (image.format != ImageFormat.YUV_420_888 &&
+            image.format != ImageFormat.YUV_422_888 &&
+            image.format != ImageFormat.YUV_444_888
         ) {
             return null
         }
@@ -37,17 +42,18 @@ class ZxingDecoder {
         val width = image.width
         val height = image.height
 
-        // The plane buffer can be padded or cropped relative to width*height, so
-        // read exactly the rows and columns we need rather than trusting limit().
+        // The plane buffer can be padded relative to width, so copy row by row
+        // and leave the tail zeroed rather than letting the last row shift.
         val packed = ByteArray(rowStride * height)
         val buffer = plane.buffer
         buffer.rewind()
-        var copied = 0
-        while (copied < height) {
+        var row = 0
+        while (row < height) {
+            val offset = row * rowStride
             val chunk = minOf(buffer.remaining(), rowStride)
             if (chunk <= 0) break
-            buffer.get(packed, copied, chunk)
-            copied += chunk
+            buffer.get(packed, offset, chunk)
+            row += chunk / rowStride + 1
         }
 
         val degrees = image.imageInfo.rotationDegrees
@@ -56,52 +62,44 @@ class ZxingDecoder {
         val outHeight = if (degrees % 180 == 0) height else width
 
         return decodeLuminance(rotated, outWidth, outHeight)
+            // Light-on-dark codes are common on printed labels and screens.
             ?: decodeLuminance(invert(rotated), outWidth, outHeight)
-    }
-
-    private fun decodeLuminance(data: ByteArray, width: Int, height: Int): DecodedCode? {
-        val source = PlanarYUVLuminanceSource(
-            data,
-            width,
-            height,
-            0,
-            0,
-            width,
-            height,
-            false,
-        )
-        return runCatching {
-            reader.decodeWithState(BinaryBitmap(HybridBinarizer(source))).toDecoded()
-        }.getOrNull()
     }
 
     /** Decodes a still image, e.g. one picked from the photo library. */
     fun decode(bitmap: Bitmap): DecodedCode? {
         val width = bitmap.width
         val height = bitmap.height
+        if (width <= 0 || height <= 0) return null
+
         val pixels = IntArray(width * height)
         bitmap.getPixels(pixels, 0, width, 0, 0, width, height)
 
-        val luminance = ByteArray(width * height)
+        return decodeNodes(BinaryBitmap(HybridBinarizer(RGBLuminanceSource(width, height, pixels))))
+            ?: decodeLuminance(toLuminance(pixels, width, height), width, height)
+    }
+
+    private fun decodeLuminance(data: ByteArray, width: Int, height: Int): DecodedCode? {
+        val source = PlanarYUVLuminanceSource(data, width, height, 0, 0, width, height, false)
+        return decodeNodes(BinaryBitmap(HybridBinarizer(source)))
+    }
+
+    private fun decodeNodes(bitmap: BinaryBitmap): DecodedCode? {
+        val reader = MultiFormatReader().apply { setHints(HINTS) }
+        return runCatching { reader.decode(bitmap).toDecoded() }.getOrNull()
+    }
+
+    /** BT.601 luma, matching what the camera pipeline feeds the decoder. */
+    private fun toLuminance(pixels: IntArray, width: Int, height: Int): ByteArray {
+        val out = ByteArray(width * height)
         for (i in pixels.indices) {
             val pixel = pixels[i]
             val r = (pixel shr 16) and 0xFF
             val g = (pixel shr 8) and 0xFF
             val b = pixel and 0xFF
-            // BT.601 luma, matching what the camera pipeline feeds the decoder.
-            luminance[i] = ((r * 66 + g * 151 + b * 29) shr 8).toByte()
+            out[i] = ((r * 66 + g * 151 + b * 29) shr 8).toByte()
         }
-
-        val source = RGBLuminanceSource(width, height, pixels)
-        val fromPixels = runCatching {
-            reader.decodeWithState(BinaryBitmap(HybridBinarizer(source))).toDecoded()
-        }.getOrNull()
-        if (fromPixels != null) return fromPixels
-
-        val grey = PlanarYUVLuminanceSource(luminance, width, height, 0, 0, width, height, false)
-        return runCatching {
-            reader.decodeWithState(BinaryBitmap(HybridBinarizer(grey))).toDecoded()
-        }.getOrNull()
+        return out
     }
 
     private fun com.google.zxing.Result.toDecoded() = DecodedCode(
