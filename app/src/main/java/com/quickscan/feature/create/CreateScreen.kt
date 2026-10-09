@@ -23,6 +23,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -46,6 +47,7 @@ import com.quickscan.core.ui.component.LucideUser
 import com.quickscan.core.ui.component.LucideWifi
 import com.quickscan.core.ui.component.QSNavBar
 import com.quickscan.core.ui.component.QSPrimaryButton
+import com.quickscan.core.ui.component.QSSecondaryButton
 import com.quickscan.core.ui.component.QSSwitch
 import com.quickscan.core.ui.component.QSTextField
 import com.quickscan.core.ui.component.QrCodeView
@@ -61,6 +63,14 @@ import com.quickscan.core.ui.theme.Space
 /** Decorative art behind the preview while no payload is entered yet. */
 private const val PREVIEW_PLACEHOLDER_SEED = 5_517_204L
 
+/**
+ * Exported images are always dark on white, whatever the app's theme is
+ * doing: the file is going somewhere else, so it has to stand on its own.
+ */
+private const val EXPORT_SIZE_PX = 1024
+private const val EXPORT_FOREGROUND = 0xFF111318.toInt()
+private const val EXPORT_BACKGROUND = 0xFFFFFFFF.toInt()
+
 @Composable
 fun CreateScreen(
     onBack: () -> Unit,
@@ -70,6 +80,16 @@ fun CreateScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val palette = QsTheme.palette
     val context = LocalContext.current
+
+    // Encoding is real work, so it stays off the main thread.
+    val exportBitmap by produceState<Bitmap?>(null, state.payload) {
+        value = withContext(Dispatchers.Default) {
+            state.payload
+                .takeIf { it.isNotBlank() }
+                ?.let { QrEncoder.encode(it) }
+                ?.let { QrEncoder.render(it, EXPORT_SIZE_PX, EXPORT_FOREGROUND, EXPORT_BACKGROUND) }
+        }
+    }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -108,6 +128,38 @@ fun CreateScreen(
             verticalArrangement = Arrangement.spacedBy(Space.x2xl),
         ) {
             PreviewCard(payload = state.payload, caption = state.caption)
+
+            exportBitmap?.let { bitmap ->
+                ExportRow(
+                    bitmap = bitmap,
+                    onSave = {
+                        QrExporter.saveToGallery(context, bitmap)
+                            .onSuccess {
+                                Toast.makeText(
+                                    context,
+                                    R.string.qr_image_saved,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                            .onFailure {
+                                Toast.makeText(
+                                    context,
+                                    R.string.qr_image_save_failed,
+                                    Toast.LENGTH_SHORT,
+                                ).show()
+                            }
+                    },
+                    onShare = {
+                        context.startActivity(
+                            QrExporter.shareIntent(
+                                context = context,
+                                bitmap = bitmap,
+                                chooserTitle = context.getString(R.string.share_qr_chooser),
+                            ),
+                        )
+                    },
+                )
+            }
 
             Text(
                 text = stringResource(R.string.create_content_type),
@@ -220,6 +272,42 @@ fun CreateScreen(
         onSelect = onTabSelected,
         modifier = Modifier.align(Alignment.BottomCenter),
     )
+    }
+}
+
+@Composable
+private fun ExportRow(
+    bitmap: Bitmap,
+    onSave: () -> Unit,
+    onShare: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val palette = QsTheme.palette
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(Space.md),
+    ) {
+        Text(
+            text = stringResource(R.string.export_section),
+            style = QsTheme.text.label11,
+            color = palette.inkFaint,
+        )
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.md)) {
+            QSPrimaryButton(
+                label = stringResource(R.string.save_qr_to_gallery),
+                onClick = onSave,
+                icon = LucideDownload,
+                modifier = Modifier.weight(1f),
+            )
+            QSSecondaryButton(
+                label = stringResource(R.string.share_qr_image),
+                onClick = onShare,
+                ink = palette.ink,
+                container = palette.surface,
+                modifier = Modifier.weight(1f),
+            )
+        }
     }
 }
 

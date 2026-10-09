@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Only the cache directory is exposed, and only for exported QR images. -->
+<paths>
+    <cache-path
+        name="shared-qr"
+        path="shared-qr/" />
+</paths>

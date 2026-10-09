@@ -149,6 +149,12 @@
     <string name="create_preview_placeholder">Enter details to preview</string>
     <string name="create_fill_required">Fill in the required fields first</string>
     <string name="create_saved">QR code saved</string>
+    <string name="export_section">EXPORT</string>
+    <string name="save_qr_to_gallery">Save to Photos</string>
+    <string name="share_qr_image">Share image</string>
+    <string name="share_qr_chooser">Share QR code image</string>
+    <string name="qr_image_saved">Image saved to Photos</string>
+    <string name="qr_image_save_failed">Could not save the image</string>
     <string name="create_security_wpa">WPA/WPA2</string>
 
     <!-- Settings -->
