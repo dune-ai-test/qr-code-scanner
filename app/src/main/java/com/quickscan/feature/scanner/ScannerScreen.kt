@@ -212,6 +212,7 @@ fun ScannerScreen(
                     hasPermission = hasCameraPermission,
                     controller = controller,
                     torchOn = state.torchOn,
+                    autoDetect = state.autoDetect,
                     onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                     onOpenSettings = context::openAppSettings,
                     onTorch = {
@@ -350,6 +351,7 @@ private fun Viewfinder(
     hasPermission: Boolean,
     controller: CameraController,
     torchOn: Boolean,
+    autoDetect: Boolean,
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit,
     onTorch: () -> Unit,
@@ -400,7 +402,7 @@ private fun Viewfinder(
         }
 
         AutoDetectPill(
-            active = hasPermission,
+            enabled = state.autoDetect && hasPermission,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(20.dp),
@@ -482,8 +484,13 @@ private fun Reticle(color: Color, modifier: Modifier = Modifier) {
     }
 }
 
+/**
+ * Shows whether scanning is actually running. Green means codes are being
+ * read automatically; red means the shutter button is the only way in, which
+ * is the case when auto-detect is switched off in Settings.
+ */
 @Composable
-private fun AutoDetectPill(active: Boolean, modifier: Modifier = Modifier) {
+private fun AutoDetectPill(enabled: Boolean, modifier: Modifier = Modifier) {
     val palette = QsTheme.palette
 
     Row(
@@ -498,12 +505,12 @@ private fun AutoDetectPill(active: Boolean, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .size(7.dp)
                 .clip(CircleShape)
-                .background(if (active) palette.live else palette.inkFaint),
+                .background(if (enabled) palette.live else palette.danger),
         )
         Text(
             text = stringResource(R.string.auto_detect),
             style = QsTheme.text.rowSub12.copy(fontWeight = FontWeight.SemiBold),
-            color = Color.White,
+            color = if (enabled) Color.White else Color.White.copy(alpha = 0.6f),
         )
     }
 }

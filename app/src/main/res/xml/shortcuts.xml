@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Long-press the launcher icon: jump straight to a destination. -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <shortcut
+        android:shortcutId="scan"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_scan"
+        android:shortcutShortLabel="@string/tab_scan"
+        android:shortcutLongLabel="@string/tab_scan">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.quickscan.MainActivity"
+            android:targetPackage="com.quickscan">
+            <extra
+                android:name="com.quickscan.extra.ROUTE"
+                android:value="scan" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="history"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_history"
+        android:shortcutShortLabel="@string/tab_history"
+        android:shortcutLongLabel="@string/tab_history">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.quickscan.MainActivity"
+            android:targetPackage="com.quickscan">
+            <extra
+                android:name="com.quickscan.extra.ROUTE"
+                android:value="history" />
+        </intent>
+    </shortcut>
+
+    <shortcut
+        android:shortcutId="create"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_create"
+        android:shortcutShortLabel="@string/tab_create"
+        android:shortcutLongLabel="@string/tab_create">
+        <intent
+            android:action="android.intent.action.VIEW"
+            android:targetClass="com.quickscan.MainActivity"
+            android:targetPackage="com.quickscan">
+            <extra
+                android:name="com.quickscan.extra.ROUTE"
+                android:value="create" />
+        </intent>
+    </shortcut>
+
+</shortcuts>

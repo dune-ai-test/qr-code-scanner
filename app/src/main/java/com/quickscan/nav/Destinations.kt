@@ -3,6 +3,9 @@ package com.quickscan.nav
 import com.quickscan.core.ui.component.TabDestination
 
 object Routes {
+    /** Intent extra a launcher shortcut uses to pick the first screen. */
+    const val EXTRA_ROUTE = "com.quickscan.extra.ROUTE"
+
     const val WELCOME = "welcome"
     const val NAME = "name"
 

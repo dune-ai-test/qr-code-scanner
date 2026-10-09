@@ -81,6 +81,11 @@
             android:launchMode="singleTop"
             android:theme="@style/Theme.QuickScan"
             android:windowSoftInputMode="adjustResize">
+
+            <!-- Long-press the launcher icon for Scan / History / Create. -->
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
