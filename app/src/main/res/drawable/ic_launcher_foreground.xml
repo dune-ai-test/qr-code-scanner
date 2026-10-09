@@ -1,22 +1,30 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Three finder patterns and a module cluster, drawn inside the 72dp safe zone. -->
+<!--
+  Launcher mark: a 4x4 module block, every module a whole square, with the two
+  modules on the diagonal in the accent colour.
+
+  Geometry: 4 modules of 8 units at a 10 unit pitch, spanning 38 units and
+  centred in the 108 unit viewport. That puts the mark's bounding circle at
+  ~27 units, comfortably inside the 66 unit safe zone, so nothing is clipped
+  by a circular launcher mask.
+-->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
 
+    <!-- Modules. -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillType="evenOdd"
-        android:pathData="M18,18h24v24h-24z M25,25h10v10h-10z M66,18h24v24h-24z M73,25h10v10h-10z M18,66h24v24h-24z M25,73h10v10h-10z" />
+        android:pathData="M45,35h8v8h-8z M55,35h8v8h-8z M65,35h8v8h-8z
+                          M35,45h8v8h-8z M65,45h8v8h-8z
+                          M35,55h8v8h-8z M45,55h8v8h-8z M65,55h8v8h-8z
+                          M35,65h8v8h-8z M55,65h8v8h-8z" />
 
+    <!-- The diagonal, in the accent colour. -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M25,25h10v10h-10z M73,25h10v10h-10z M25,73h10v10h-10z" />
-
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M48,48h6v6h-6z M56,48h6v6h-6z M48,56h6v6h-6z M56,56h6v6h-6z M66,66h6v6h-6z M76,66h6v6h-6z M66,76h6v6h-6z" />
+        android:fillColor="#3D8FD1"
+        android:pathData="M35,35h8v8h-8z M55,55h8v8h-8z" />
 
 </vector>
