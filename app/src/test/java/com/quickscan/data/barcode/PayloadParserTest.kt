@@ -49,7 +49,7 @@ class PayloadParserTest {
 
         val wifi = payload as ScannedPayload.Wifi
         assertEquals("Caf;e; Bar", wifi.ssid)
-        assertEquals("pa\ss", wifi.password)
+        assertEquals("pa\\ss", wifi.password)
     }
 
     @Test

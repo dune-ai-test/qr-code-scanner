@@ -118,7 +118,7 @@ class QrPlaceholderTest {
         val grid = QrPlaceholder.generate(seed = 3L)
 
         for (y in 0 until grid.size) {
-            val covered = grid.runsInRow(y).sumOf { it.count }
+            val covered = grid.runsInRow(y).sumOf { it.count() }
             val dark = (0 until grid.size).count { x -> grid[x, y] }
             assertEquals("row $y", dark, covered)
         }
