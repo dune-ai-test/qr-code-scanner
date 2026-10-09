@@ -43,33 +43,26 @@ object DecodeImages {
     }
 
     /**
-     * A shutter capture arrives as a single-plane JPEG inside the [ImageProxy],
-     * so it is unpacked to a bitmap and then sampled like any other photo.
+     * A shutter capture arrives as a single-plane JPEG inside the [ImageProxy].
+     * The bounds are read first and the real decode runs at the sampled size,
+     * so a 12MP capture never has to exist as a 48MB bitmap.
      */
     fun fromCapture(image: ImageProxy): Bitmap? {
         if (image.format != android.graphics.ImageFormat.JPEG) return null
         val buffer = image.planes[0].buffer
         val bytes = ByteArray(buffer.remaining())
         buffer.get(bytes)
-        val decoded = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
-        return decoded.sampled()
+
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)
+        if (bounds.outWidth <= 0 || bounds.outHeight <= 0) return null
+
+        val options = BitmapFactory.Options().apply {
+            inSampleSize = sampleSizeFor(bounds.outWidth, bounds.outHeight)
+        }
+        return BitmapFactory.decodeByteArray(bytes, 0, bytes.size, options)
     }
 
-    /** Scales a bitmap in place-free fashion so its long edge fits the budget. */
-    fun Bitmap.sampled(): Bitmap {
-        val longEdge = maxOf(width, height)
-        if (longEdge <= MAX_DECODE_EDGE) return this
-
-        val factor = MAX_DECODE_EDGE.toFloat() / longEdge
-        val scaled = Bitmap.createScaledBitmap(
-            this,
-            (width * factor).toInt().coerceAtLeast(1),
-            (height * factor).toInt().coerceAtLeast(1),
-            true,
-        )
-        if (scaled != this) recycle()
-        return scaled
-    }
 
     private fun sampleSizeFor(width: Int, height: Int): Int {
         if (width <= 0 || height <= 0) return 1
