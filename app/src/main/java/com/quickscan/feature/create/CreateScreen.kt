@@ -51,6 +51,8 @@ import com.quickscan.core.ui.component.QSSwitch
 import com.quickscan.core.ui.component.QSTextField
 import com.quickscan.core.ui.component.QrCodeView
 import com.quickscan.core.ui.component.StatusBarSpacer
+import com.quickscan.core.ui.component.QSTabBar
+import com.quickscan.core.ui.component.TabDestination
 import com.quickscan.core.ui.theme.QsTheme
 import com.quickscan.core.ui.theme.Radius
 import com.quickscan.core.ui.theme.Space
@@ -58,6 +60,7 @@ import com.quickscan.core.ui.theme.Space
 @Composable
 fun CreateScreen(
     onBack: () -> Unit,
+    onTabSelected: (TabDestination) -> Unit,
     viewModel: CreateViewModel = hiltViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -212,6 +215,8 @@ fun CreateScreen(
 
             Spacer(Modifier.height(Space.x2xl))
         }
+
+        QSTabBar(selected = TabDestination.Create, onSelect = onTabSelected)
     }
 }
 

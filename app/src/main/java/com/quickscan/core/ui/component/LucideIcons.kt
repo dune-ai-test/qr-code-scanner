@@ -160,10 +160,7 @@ val LucideBookmark = lucide("Bookmark") {
 
 val LucideLock = lucide("Lock") {
     roundedRect(3f, 11f, 18f, 11f, 2f)
-    moveTo(7f, 11f); verticalLineTo(7f)
-    arcTo(5f, 5f, 0f, true, true, 10f, 0f)
-    arcTo(5f, 5f, 0f, true, true, 17f, 7f)
-    verticalLineTo(11f)
+    moveTo(7f, 11f); arcTo(5f, 5f, 0f, true, true, 17f, 11f)
 }
 
 val LucideEye = lucide("Eye") {

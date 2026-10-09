@@ -24,6 +24,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -186,7 +187,7 @@ fun ScannerScreen(
         StatusBarSpacer()
 
         LazyColumn(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.weight(1f),
             verticalArrangement = Arrangement.spacedBy(Space.x2xl),
         ) {
             item {
@@ -401,13 +402,14 @@ private fun Viewfinder(
                     .align(Alignment.Center)
                     .padding(horizontal = Space.section),
             )
+            // The shutter row belongs to the live preview, not the empty state.
+        } else {
+            ShutterControls(
+                onGallery = onGallery,
+                onFlip = onFlip,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
         }
-
-        ShutterControls(
-            onGallery = onGallery,
-            onFlip = onFlip,
-            modifier = Modifier.align(Alignment.BottomCenter),
-        )
     }
 }
 
@@ -425,7 +427,11 @@ private fun Reticle(color: Color, modifier: Modifier = Modifier) {
         label = "sweepProgress",
     )
 
-    Box(modifier = modifier) {
+    BoxWithConstraints(modifier = modifier) {
+        // Travel is a fraction of the reticle, not of the 2dp line itself.
+        val travel = maxHeight * 0.80f
+        val start = maxHeight * 0.10f
+
         QrCornerBrackets(
             color = color,
             armLength = 38.dp,
@@ -436,7 +442,7 @@ private fun Reticle(color: Color, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(2.dp)
-                .graphicsLayer { translationY = size.height * (0.10f + progress * 0.80f) }
+                .graphicsLayer { translationY = start + travel * progress }
                 .shadow(7.dp, CircleShape, clip = false)
                 .background(color, CircleShape),
         )
@@ -579,7 +585,8 @@ private fun PermissionPrompt(
         QSSecondaryButton(
             label = stringResource(R.string.camera_permission_settings),
             onClick = onOpenSettings,
-            ink = Color.White.copy(alpha = 0.85f),
+            ink = Color.White,
+            container = Color.White.copy(alpha = 0.14f),
             modifier = Modifier.fillMaxWidth(),
         )
     }

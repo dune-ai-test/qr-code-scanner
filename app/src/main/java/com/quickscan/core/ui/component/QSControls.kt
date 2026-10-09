@@ -107,6 +107,7 @@ fun QSSecondaryButton(
     modifier: Modifier = Modifier,
     ink: Color = QsTheme.palette.ink,
     enabled: Boolean = true,
+    container: Color = QsTheme.palette.surface,
 ) {
     val palette = QsTheme.palette
     val text = QsTheme.text
@@ -115,7 +116,7 @@ fun QSSecondaryButton(
         modifier = modifier
             .height(Metrics.buttonHeight)
             .clip(Radius.lgPlus)
-            .background(palette.surface)
+            .background(container)
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {

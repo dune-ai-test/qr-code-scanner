@@ -84,7 +84,10 @@ fun QuickScanNavHost(
         }
 
         composable(Routes.CREATE) {
-            CreateScreen(onBack = { navController.popBackStack() })
+            CreateScreen(
+                onBack = { navController.popBackStack() },
+                onTabSelected = ::selectTab,
+            )
         }
 
         composable(Routes.SETTINGS) {
