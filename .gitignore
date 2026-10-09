@@ -23,3 +23,6 @@ keystore.properties
 app/src/main/res/font/*.ttf
 # Editor and agent scratch files.
 .zcode/
+
+# Device screenshots captured while driving the app over adb.
+shots/
