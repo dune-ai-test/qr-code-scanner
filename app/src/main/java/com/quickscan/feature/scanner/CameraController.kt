@@ -7,6 +7,7 @@ import androidx.camera.core.TorchState
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
@@ -189,7 +190,7 @@ class CameraController(
         }
     }
 
-    private fun analyse(image: androidx.camera.core.ImageProxy) {
+    private fun analyse(image: ImageProxy) {
         if (paused || !autoDetect || !decoding.compareAndSet(false, true)) {
             image.close()
             return
