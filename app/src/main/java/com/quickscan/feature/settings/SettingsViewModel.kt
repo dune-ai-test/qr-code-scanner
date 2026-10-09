@@ -2,6 +2,7 @@ package com.quickscan.feature.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.quickscan.core.release.ReleaseNotes
 import com.quickscan.core.ui.theme.Accent
 import com.quickscan.data.repository.ScanRepository
 import com.quickscan.data.repository.SettingsRepository
@@ -12,7 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -27,6 +30,7 @@ data class SettingsUiState(
     val theme: ThemeState = ThemeState(),
     val retentionDays: Int = DEFAULT_RETENTION_DAYS,
     val storage: StorageUsage = StorageUsage(0, 0),
+    val hasUnreadRelease: Boolean = false,
 ) {
     companion object {
         const val DEFAULT_RETENTION_DAYS = 30
@@ -49,6 +53,9 @@ class SettingsViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val storageUsage = MutableStateFlow(StorageUsage(0, 0))
+
+    private val unreadRelease: Flow<Boolean> = settingsRepository.lastSeenRelease
+        .map { ReleaseNotes.isUnseen(it) }
 
     private val behaviour: Flow<ScannerBehaviour> = combine(
         combine(
@@ -77,7 +84,8 @@ class SettingsViewModel @Inject constructor(
         behaviour,
         settingsRepository.themeState,
         storageUsage,
-    ) { name, scanner, theme, storage ->
+        unreadRelease,
+    ) { name, scanner, theme, storage, unread ->
         SettingsUiState(
             displayName = name,
             autoDetect = scanner.autoDetect,
@@ -88,6 +96,7 @@ class SettingsViewModel @Inject constructor(
             theme = theme,
             retentionDays = scanner.retentionDays,
             storage = storage,
+            hasUnreadRelease = unread,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 

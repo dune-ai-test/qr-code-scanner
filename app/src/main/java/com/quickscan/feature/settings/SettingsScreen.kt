@@ -82,6 +82,7 @@ import com.quickscan.data.repository.StorageUsage
 @Composable
 fun SettingsScreen(
     onBack: () -> Unit,
+    onOpenWhatsNew: () -> Unit,
     onTabSelected: (TabDestination) -> Unit,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
@@ -332,14 +333,27 @@ fun SettingsScreen(
                     icon = LucideSparkles,
                     title = stringResource(R.string.setting_whats_new),
                     background = palette.surface,
-                    onClick = {},
+                    onClick = onOpenWhatsNew,
                     trailing = {
-                        Icon(
-                            imageVector = LucideChevronRight,
-                            contentDescription = null,
-                            tint = palette.inkFaint,
-                            modifier = Modifier.size(16.dp),
-                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(Space.md),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            if (state.hasUnreadRelease) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .clip(CircleShape)
+                                        .background(palette.accent),
+                                )
+                            }
+                            Icon(
+                                imageVector = LucideChevronRight,
+                                contentDescription = null,
+                                tint = palette.inkFaint,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
                     },
                 )
             }

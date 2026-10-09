@@ -37,6 +37,8 @@ class SettingsRepository(private val store: SettingsStore) {
     val accentName: Flow<String> = store.accentName
     val largerText: Flow<Boolean> = store.largerText
 
+    val lastSeenRelease: Flow<String?> = store.lastSeenRelease
+
     val scannerPreferences: Flow<ScannerPreferences> = combine(
         store.autoDetect,
         store.copyAutomatically,
@@ -89,6 +91,8 @@ class SettingsRepository(private val store: SettingsStore) {
     suspend fun setLargerText(value: Boolean) = store.setLargerText(value)
 
     suspend fun setRetentionDays(value: Int) = store.setRetentionDays(value)
+
+    suspend fun setLastSeenRelease(version: String) = store.setLastSeenRelease(version)
 }
 
 private fun String.toAccent(): Accent =

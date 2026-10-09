@@ -48,6 +48,10 @@ class SettingsStore(private val context: Context) {
     val largerText: Flow<Boolean> =
         context.dataStore.data.map { it[KEY_LARGER_TEXT] ?: false }
 
+    /** Newest release-notes version the reader has seen, or null. */
+    val lastSeenRelease: Flow<String?> =
+        context.dataStore.data.map { it[KEY_LAST_SEEN_RELEASE] }
+
     /** Days of history to keep, or 0 for forever. */
     val retentionDays: Flow<Int> =
         context.dataStore.data.map { it[KEY_RETENTION] ?: DEFAULT_RETENTION_DAYS }
@@ -74,6 +78,8 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setRetentionDays(value: Int) = put(KEY_RETENTION, value)
 
+    suspend fun setLastSeenRelease(value: String) = put(KEY_LAST_SEEN_RELEASE, value)
+
     private suspend fun <T> put(key: Preferences.Key<T>, value: T) {
         context.dataStore.edit { it[key] = value }
     }
@@ -92,5 +98,6 @@ class SettingsStore(private val context: Context) {
         private val KEY_ACCENT = stringPreferencesKey("accent")
         private val KEY_LARGER_TEXT = booleanPreferencesKey("larger_text")
         private val KEY_RETENTION = intPreferencesKey("retention_days")
+        private val KEY_LAST_SEEN_RELEASE = stringPreferencesKey("last_seen_release")
     }
 }

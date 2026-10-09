@@ -10,6 +10,7 @@ object Routes {
     const val HISTORY = "history"
     const val CREATE = "create"
     const val SETTINGS = "settings"
+    const val WHATS_NEW = "whats-new"
 
     const val RESULT = "result/{scanId}"
     fun result(scanId: Long) = "result/$scanId"

@@ -18,6 +18,7 @@ import com.quickscan.feature.onboarding.OnboardingWelcomeScreen
 import com.quickscan.feature.result.ResultScreen
 import com.quickscan.feature.scanner.ScannerScreen
 import com.quickscan.feature.settings.SettingsScreen
+import com.quickscan.feature.whatsnew.WhatsNewScreen
 
 @Composable
 fun QuickScanNavHost(
@@ -93,8 +94,13 @@ fun QuickScanNavHost(
         composable(Routes.SETTINGS) {
             SettingsScreen(
                 onBack = { navController.popBackStack() },
+                onOpenWhatsNew = { navController.navigate(Routes.WHATS_NEW) },
                 onTabSelected = ::selectTab,
             )
+        }
+
+        composable(Routes.WHATS_NEW) {
+            WhatsNewScreen(onBack = { navController.popBackStack() })
         }
 
         composable(
