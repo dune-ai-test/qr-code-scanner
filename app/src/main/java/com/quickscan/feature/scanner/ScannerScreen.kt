@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -442,7 +443,7 @@ private fun Reticle(color: Color, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(2.dp)
-                .graphicsLayer { translationY = start + travel * progress }
+                .offset(y = start + travel * progress)
                 .shadow(7.dp, CircleShape, clip = false)
                 .background(color, CircleShape),
         )
