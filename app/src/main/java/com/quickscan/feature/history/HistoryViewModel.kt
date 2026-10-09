@@ -26,14 +26,23 @@ data class ScanGroup(
 data class HistoryUiState(
     val groups: List<ScanGroup> = emptyList(),
     val pinned: List<ScanEntity> = emptyList(),
+    /** Ids currently ticked; empty means the list is browsing, not selecting. */
+    val selection: Set<Long> = emptySet(),
     val stats: ScanStats = ScanStats(),
     val filter: ScanFilter = ScanFilter.All,
     val query: String = "",
     val searchOpen: Boolean = false,
     val totalUnfiltered: Int = 0,
+    /** Ids the filter and search currently allow, for select-all. */
+    val visibleIds: List<Long> = emptyList(),
 ) {
+    val isSelecting: Boolean get() = selection.isNotEmpty()
     val isEmpty: Boolean get() = groups.isEmpty() && totalUnfiltered == 0
     val hasNoMatches: Boolean get() = groups.isEmpty() && totalUnfiltered > 0
+
+    /** Rows that vanished while selected must not stay stuck ticked. */
+    fun pruneSelection(): HistoryUiState =
+        copy(selection = selection intersect visibleIds.toSet())
 }
 
 @HiltViewModel
@@ -44,6 +53,7 @@ class HistoryViewModel @Inject constructor(
     private val filter = MutableStateFlow(ScanFilter.All)
     private val query = MutableStateFlow("")
     private val searchOpen = MutableStateFlow(false)
+    private val selection = MutableStateFlow<Set<Long>>(emptySet())
 
     private val allScans = scanRepository.observeScans()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -54,7 +64,8 @@ class HistoryViewModel @Inject constructor(
         filter,
         query,
         searchOpen,
-    ) { scans, stats, activeFilter, activeQuery, isSearchOpen ->
+        selection,
+    ) { scans, stats, activeFilter, activeQuery, isSearchOpen, selected ->
         val searched = if (activeQuery.isBlank()) {
             scans
         } else {
@@ -70,7 +81,8 @@ class HistoryViewModel @Inject constructor(
             query = activeQuery,
             searchOpen = isSearchOpen,
             totalUnfiltered = scans.size,
-        )
+            visibleIds = filtered.map { it.id },
+        ).pruneSelection()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoryUiState())
 
     init {
@@ -90,6 +102,42 @@ class HistoryViewModel @Inject constructor(
         searchOpen.value = open
         if (!open) query.value = ""
     }
+
+    /** Long-press opens selection mode; a tap in it toggles one row. */
+    fun onRowTap(id: Long) {
+        selection.value = selection.value.let { current ->
+            when {
+                current.isEmpty() -> current
+                id in current -> current - id
+                else -> current + id
+            }
+        }
+    }
+
+    fun onRowLongPress(id: Long) {
+        selection.value = if (id in selection.value) selection.value - id else selection.value + id
+    }
+
+    fun selectAll() {
+        selection.value = state.value.visibleIds.toSet()
+    }
+
+    fun clearSelection() {
+        selection.value = emptySet()
+    }
+
+    fun deleteSelected(onDone: () -> Unit) {
+        val ids = selection.value.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch {
+            scanRepository.deleteAll(ids)
+            selection.value = emptySet()
+            onDone()
+        }
+    }
+
+    suspend fun selectedPayloads(): String =
+        scanRepository.rawValues(selection.value.toList()).joinToString("\n\n")
 
     fun clearHistory() {
         viewModelScope.launch { scanRepository.clear() }

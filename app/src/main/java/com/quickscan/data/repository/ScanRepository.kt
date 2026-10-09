@@ -82,6 +82,15 @@ class ScanRepository(
 
     suspend fun delete(id: Long) = dao.deleteById(id)
 
+    suspend fun deleteAll(ids: List<Long>) {
+        if (ids.isEmpty()) return
+        dao.deleteByIds(ids)
+    }
+
+    /** Raw values for a selection, in the order they were scanned. */
+    suspend fun rawValues(ids: List<Long>): List<String> =
+        dao.findByIds(ids).sortedBy { it.createdAt }.map { it.rawValue }
+
     /** Pins or unpins a scan, whichever it currently is not. */
     suspend fun togglePinned(id: Long): Boolean {
         val row = dao.findById(id) ?: return false

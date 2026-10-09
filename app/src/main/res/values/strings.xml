@@ -114,6 +114,14 @@
     <string name="filter_wifi">Wi-Fi</string>
     <string name="filter_text">Text</string>
     <string name="search_history">Search history</string>
+    <string name="selected_count">%1$d selected</string>
+    <string name="select_all">Select all</string>
+    <string name="delete_selected">Delete selected</string>
+    <string name="share_selected">Share selected</string>
+    <string name="delete_selected_title">Delete %1$d scans?</string>
+    <string name="delete_selected_body">These are removed from this device. It cannot be undone.</string>
+    <string name="deleted_selected">%1$d scans deleted</string>
+    <string name="share_scans_chooser">Share scans</string>
     <string name="search_hint">Search scans</string>
     <string name="empty_no_scans_title">No scans yet</string>
     <string name="empty_no_scans_body">Every code you scan lands here, grouped by type and date so you can find it again instantly.</string>

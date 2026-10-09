@@ -34,8 +34,14 @@ interface ScanDao {
     @Query("DELETE FROM scans WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("DELETE FROM scans WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
     @Query("DELETE FROM scans")
     suspend fun deleteAll()
+
+    @Query("SELECT * FROM scans WHERE id IN (:ids) ORDER BY createdAt DESC")
+    suspend fun findByIds(ids: List<Long>): List<ScanEntity>
 
     @Query("DELETE FROM scans WHERE createdAt < :cutoff")
     suspend fun deleteOlderThan(cutoff: Long)

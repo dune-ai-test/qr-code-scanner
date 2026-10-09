@@ -1,6 +1,10 @@
 package com.quickscan.feature.history
 
 import androidx.compose.foundation.background
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.border
+import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.clickable
@@ -24,7 +28,12 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -75,18 +84,51 @@ fun HistoryScreen(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val palette = QsTheme.palette
     val text = QsTheme.text
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var confirmDelete by remember { mutableStateOf(false) }
+    var deletedCount by remember { mutableIntStateOf(0) }
+
+    // Sharing a selection hands the raw text to another app; nothing is sent.
+    val shareSelection = {
+        scope.launch {
+            val payload = viewModel.selectedPayloads()
+            if (payload.isNotBlank()) {
+                context.startActivity(
+                    Intent.createChooser(
+                        Intent(Intent.ACTION_SEND).apply {
+                            type = "text/plain"
+                            putExtra(Intent.EXTRA_TEXT, payload)
+                        },
+                        context.getString(R.string.share_scans_chooser),
+                    ),
+                )
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(palette.bg)) {
     Column(modifier = Modifier.fillMaxSize()) {
         StatusBarSpacer()
 
-        QSNavBar(
-            title = stringResource(R.string.nav_history),
-            onBack = onBack,
-            actionIcon = LucideSearch,
-            actionDescription = stringResource(R.string.search_history),
-            onAction = { viewModel.toggleSearch() },
-        )
+        if (state.isSelecting) {
+            SelectionBar(
+                count = state.selection.size,
+                onClose = viewModel::clearSelection,
+                onSelectAll = viewModel::selectAll,
+                onShare = { shareSelection() },
+                onDelete = { confirmDelete = true },
+            )
+        } else {
+            QSNavBar(
+                title = stringResource(R.string.nav_history),
+                onBack = onBack,
+                actionIcon = LucideSearch,
+                actionDescription = stringResource(R.string.search_history),
+                onAction = { viewModel.toggleSearch() },
+            )
+        }
 
         when {
             state.isEmpty -> EmptyHistory(
@@ -165,7 +207,14 @@ fun HistoryScreen(
                         ) {
                             state.pinned.forEachIndexed { index, scan ->
                                 if (index > 0) QSDivider(inset = 74.dp)
-                                ScanRow(scan = scan, onOpen = onOpenScan, pinned = true)
+                                ScanRow(
+                                    scan = scan,
+                                    pinned = true,
+                                    selected = scan.id in state.selection,
+                                    selecting = state.isSelecting,
+                                    onTap = { viewModel.onRowTap(scan.id) },
+                                    onLongPress = { viewModel.onRowLongPress(scan.id) },
+                                )
                             }
                         }
                     }
@@ -184,7 +233,14 @@ fun HistoryScreen(
                         ) {
                             group.scans.forEachIndexed { index, scan ->
                                 if (index > 0) QSDivider(inset = 74.dp)
-                                ScanRow(scan = scan, onOpen = onOpenScan, pinned = false)
+                                ScanRow(
+                                    scan = scan,
+                                    pinned = false,
+                                    selected = scan.id in state.selection,
+                                    selecting = state.isSelecting,
+                                    onTap = { viewModel.onRowTap(scan.id) },
+                                    onLongPress = { viewModel.onRowLongPress(scan.id) },
+                                )
                             }
                         }
                     }
@@ -192,13 +248,58 @@ fun HistoryScreen(
             }
         }
 
+        QSTabBar(
+            selected = TabDestination.History,
+            onSelect = onTabSelected,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+
+        if (confirmDelete) {
+            AlertDialog(
+                onDismissRequest = { confirmDelete = false },
+                title = {
+                    Text(
+                        stringResource(
+                            R.string.delete_selected_title,
+                            state.selection.size,
+                        ),
+                    )
+                },
+                text = { Text(stringResource(R.string.delete_selected_body)) },
+                confirmButton = {
+                    Text(
+                        text = stringResource(R.string.delete_selected),
+                        color = palette.danger,
+                        modifier = Modifier.clickable {
+                            val count = state.selection.size
+                            viewModel.deleteSelected {
+                                deletedCount = count
+                                confirmDelete = false
+                            }
+                        },
+                    )
+                },
+                dismissButton = {
+                    Text(
+                        text = stringResource(R.string.setting_cancel),
+                        modifier = Modifier.clickable { confirmDelete = false },
+                    )
+                },
+                containerColor = palette.surface,
+            )
+        }
+    }
     }
 
-    QSTabBar(
-        selected = TabDestination.History,
-        onSelect = onTabSelected,
-        modifier = Modifier.align(Alignment.BottomCenter),
-    )
+    if (deletedCount > 0) {
+        LaunchedEffect(deletedCount) {
+            Toast.makeText(
+                context,
+                context.getString(R.string.deleted_selected, deletedCount),
+                Toast.LENGTH_SHORT,
+            ).show()
+            deletedCount = 0
+        }
     }
 }
 
@@ -206,8 +307,11 @@ fun HistoryScreen(
 @Composable
 private fun ScanRow(
     scan: ScanEntity,
-    onOpen: (Long) -> Unit,
     pinned: Boolean,
+    selected: Boolean,
+    selecting: Boolean,
+    onTap: () -> Unit,
+    onLongPress: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val palette = QsTheme.palette
@@ -219,7 +323,8 @@ private fun ScanRow(
         modifier = modifier
             .fillMaxWidth()
             .height(64.dp)
-            .clickable { onOpen(scan.id) }
+            .background(if (selected) palette.accentTint else Color.Transparent)
+            .combinedClickable(onClick = onTap, onLongClick = onLongPress)
             .padding(horizontal = 16.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -251,19 +356,134 @@ private fun ScanRow(
             )
         }
 
-        if (pinned) {
-            Icon(
+        when {
+            selecting -> SelectionTick(selected = selected)
+            pinned -> Icon(
                 imageVector = LucideBookmark,
                 contentDescription = null,
                 tint = palette.accentTintInk,
                 modifier = Modifier.size(16.dp),
             )
-        } else {
-            Icon(
+
+            else -> Icon(
                 imageVector = LucideChevronRight,
                 contentDescription = null,
                 tint = palette.inkFaint,
                 modifier = Modifier.size(16.dp),
+            )
+        }
+    }
+}
+
+/** Toolbar shown instead of the nav bar while a selection is active. */
+@Composable
+private fun SelectionBar(
+    count: Int,
+    onClose: () -> Unit,
+    onSelectAll: () -> Unit,
+    onShare: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val palette = QsTheme.palette
+    val text = QsTheme.text
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(palette.surface)
+                .combinedClickable(onClick = onClose),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = LucideX,
+                contentDescription = stringResource(R.string.setting_cancel),
+                tint = palette.ink,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.selected_count, count),
+            style = text.nav16,
+            color = palette.ink,
+            modifier = Modifier.weight(1f),
+        )
+
+        SelectionAction(
+            icon = LucideCheckSquare,
+            label = stringResource(R.string.select_all),
+            onClick = onSelectAll,
+        )
+        SelectionAction(
+            icon = LucideShare2,
+            label = stringResource(R.string.share_selected),
+            onClick = onShare,
+        )
+        SelectionAction(
+            icon = LucideTrash2,
+            label = stringResource(R.string.delete_selected),
+            tint = palette.danger,
+            onClick = onDelete,
+        )
+    }
+}
+
+@Composable
+private fun SelectionAction(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: () -> Unit,
+    tint: androidx.compose.ui.graphics.Color = QsTheme.palette.ink,
+) {
+    val palette = QsTheme.palette
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(palette.surface)
+            .combinedClickable(onClick = onClick)
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(17.dp),
+        )
+    }
+}
+
+@Composable
+private fun SelectionTick(selected: Boolean) {
+    val palette = QsTheme.palette
+    Box(
+        modifier = Modifier
+            .size(22.dp)
+            .clip(CircleShape)
+            .background(if (selected) palette.accent else Color.Transparent)
+            .border(
+                width = if (selected) 0.dp else 2.dp,
+                color = if (selected) palette.accent else palette.inkFaint,
+                shape = CircleShape,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (selected) {
+            Icon(
+                imageVector = LucideCheck,
+                contentDescription = null,
+                tint = palette.accentOn,
+                modifier = Modifier.size(14.dp),
             )
         }
     }
