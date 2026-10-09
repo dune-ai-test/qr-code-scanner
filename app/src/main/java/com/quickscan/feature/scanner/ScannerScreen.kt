@@ -693,11 +693,6 @@ private fun Context.readBitmap(uri: Uri): Bitmap? {
         }
     }.getOrNull()
 
-    android.util.Log.i(
-        "QsDecode",
-        "readBitmap ${uri.lastPathSegment} -> " +
-            "${bitmap?.width}x${bitmap?.height} sample=${options.inSampleSize}",
-    )
     return bitmap
 }
 

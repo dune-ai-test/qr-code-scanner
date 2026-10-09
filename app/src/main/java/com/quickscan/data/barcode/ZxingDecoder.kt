@@ -61,9 +61,33 @@ class ZxingDecoder {
         val outWidth = if (degrees % 180 == 0) width else height
         val outHeight = if (degrees % 180 == 0) height else width
 
-        return decodeLuminance(rotated, outWidth, outHeight)
+        // Decode the centre square the reticle covers. It is a fraction of the
+        // frame, so this is both faster and more forgiving of a code that only
+        // partly fills the viewfinder.
+        val side = (minOf(outWidth, outHeight) * CENTRE_FRACTION).toInt() and 1.inv()
+        val left = (outWidth - side) / 2
+        val top = (outHeight - side) / 2
+
+        return decodeRegion(rotated, outWidth, outHeight, left, top, side)
             // Light-on-dark codes are common on printed labels and screens.
-            ?: decodeLuminance(invert(rotated), outWidth, outHeight)
+            ?: decodeRegion(invert(rotated), outWidth, outHeight, left, top, side)
+            // A code near the edge of the frame is missed by the centre crop.
+            ?: decodeLuminance(rotated, outWidth, outHeight)
+    }
+
+    private fun decodeRegion(
+        data: ByteArray,
+        dataWidth: Int,
+        dataHeight: Int,
+        left: Int,
+        top: Int,
+        side: Int,
+    ): DecodedCode? {
+        if (side <= 0 || left + side > dataWidth || top + side > dataHeight) return null
+        val source = PlanarYUVLuminanceSource(
+            data, dataWidth, dataHeight, left, top, side, side, false,
+        )
+        return decodeNodes(BinaryBitmap(HybridBinarizer(source)))
     }
 
     /** Decodes a still image, e.g. one picked from the photo library. */
@@ -162,6 +186,9 @@ class ZxingDecoder {
         ByteArray(src.size) { i -> (255 - (src[i].toInt() and 0xFF)).toByte() }
 
     private companion object {
+        /** Share of the short edge the reticle covers. */
+        const val CENTRE_FRACTION = 0.78f
+
         val HINTS: Map<DecodeHintType, Any> = mapOf(
             DecodeHintType.POSSIBLE_FORMATS to listOf(
                 BarcodeFormat.QR_CODE,

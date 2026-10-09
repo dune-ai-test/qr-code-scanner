@@ -6,7 +6,11 @@ import androidx.camera.core.CameraSelector
 import androidx.camera.core.TorchState
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
+import androidx.camera.core.resolutionselector.AspectRatioStrategy
+import androidx.camera.core.resolutionselector.ResolutionSelector
+import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.core.util.Size
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.quickscan.data.barcode.DecodedCode
@@ -27,6 +31,13 @@ import kotlin.coroutines.resumeWithException
  * frame to [ZxingDecoder]. Frames are analysed one at a time and dropped while
  * one is still in flight, which keeps the preview at full frame rate.
  */
+/**
+ * Analysis resolution. CameraX defaults to 640x480, which is too coarse for a
+ * QR code at a normal scanning distance.
+ */
+private const val ANALYSIS_WIDTH = 1280
+private const val ANALYSIS_HEIGHT = 720
+
 class CameraController(
     private val context: Context,
     private val decoder: ZxingDecoder,
@@ -82,6 +93,17 @@ class CameraController(
         val analysisUseCase = ImageAnalysis.Builder()
             .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
             .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_YUV_420_888)
+            .setResolutionSelector(
+                ResolutionSelector.Builder()
+                    .setAspectRatioStrategy(AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY)
+                    .setResolutionStrategy(
+                        ResolutionStrategy(
+                            Size(ANALYSIS_WIDTH, ANALYSIS_HEIGHT),
+                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
+                        ),
+                    )
+                    .build(),
+            )
             .build()
             .apply { setAnalyzer(analysisExecutor, ::analyse) }
         analysis = analysisUseCase
@@ -115,15 +137,7 @@ class CameraController(
             return
         }
         try {
-            val code = decoder.decode(image)
-            android.util.Log.i(
-                "QsDecode",
-                "frame ${image.width}x${image.height} rot=${image.imageInfo.rotationDegrees} " +
-                    "result=$code",
-            )
-            code?.let(onCode)
-        } catch (t: Throwable) {
-            android.util.Log.e("QsDecode", "frame failed", t)
+            decoder.decode(image)?.let(onCode)
         } finally {
             decoding.set(false)
             image.close()
