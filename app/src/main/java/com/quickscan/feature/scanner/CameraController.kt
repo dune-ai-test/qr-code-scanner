@@ -115,7 +115,15 @@ class CameraController(
             return
         }
         try {
-            decoder.decode(image)?.let(onCode)
+            val code = decoder.decode(image)
+            android.util.Log.i(
+                "QsDecode",
+                "frame ${image.width}x${image.height} rot=${image.imageInfo.rotationDegrees} " +
+                    "result=$code",
+            )
+            code?.let(onCode)
+        } catch (t: Throwable) {
+            android.util.Log.e("QsDecode", "frame failed", t)
         } finally {
             decoding.set(false)
             image.close()

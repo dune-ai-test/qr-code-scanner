@@ -98,6 +98,9 @@ import kotlinx.coroutines.launch
 
 private const val SAMPLE_QR_SEED = 20_240_919L
 
+/** Long edge, in pixels, that a photo is sampled down to before decoding. */
+private const val MAX_DECODE_EDGE = 1600
+
 @Composable
 fun ScannerScreen(
     onOpenResult: (Long) -> Unit,
@@ -667,15 +670,46 @@ private fun Context.hasCameraPermission(): Boolean =
     ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
         PackageManager.PERMISSION_GRANTED
 
+/**
+ * Decodes a picked photo. A modern camera photo is 12MP or more, and handing
+ * that to ZXing means a 50MB int array plus its binarizer buffers, which is
+ * slow enough to look like a hang and memory-hungry enough to matter. No code
+ * needs that much resolution, so the image is sampled down first.
+ */
 private fun Context.readBitmap(uri: Uri): Bitmap? {
-    val result = runCatching {
-        contentResolver.openInputStream(uri)?.use(BitmapFactory::decodeStream)
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    runCatching {
+        contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, bounds)
+        }
     }
+
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = sampleSizeFor(bounds.outWidth, bounds.outHeight, MAX_DECODE_EDGE)
+    }
+    val bitmap = runCatching {
+        contentResolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, options)
+        }
+    }.getOrNull()
+
     android.util.Log.i(
         "QsDecode",
-        "readBitmap ${uri.lastPathSegment} ok=${result.isSuccess} value=${result.getOrNull()?.let { "${it.width}x${it.height}" }} err=${result.exceptionOrNull()}",
+        "readBitmap ${uri.lastPathSegment} -> " +
+            "${bitmap?.width}x${bitmap?.height} sample=${options.inSampleSize}",
     )
-    return result.getOrNull()
+    return bitmap
+}
+
+private fun sampleSizeFor(width: Int, height: Int, maxEdge: Int): Int {
+    if (width <= 0 || height <= 0) return 1
+    var sample = 1
+    var longEdge = maxOf(width, height)
+    while (longEdge / 2 >= maxEdge) {
+        longEdge /= 2
+        sample *= 2
+    }
+    return sample
 }
 
 private fun Context.copyToClipboard(text: String) {
