@@ -54,6 +54,7 @@
     <string name="paste_link_title">Paste a link</string>
     <string name="paste_link_hint">https://</string>
     <string name="no_image_selected">No readable code found in that image</string>
+    <string name="no_code_in_viewfinder">No code in frame. Hold steady and try again.</string>
 
     <!-- Result: shared -->
     <string name="open_link">Open link</string>

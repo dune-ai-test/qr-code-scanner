@@ -6,8 +6,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.media.AudioManager
 import android.media.ToneGenerator
 import android.net.Uri
@@ -75,6 +73,7 @@ import com.quickscan.core.ui.ScanDates
 import com.quickscan.core.ui.icon
 import com.quickscan.core.ui.labelRes
 import com.quickscan.core.ui.payloadTileColors
+import com.quickscan.core.qr.DecodeImages
 import com.quickscan.core.ui.component.LucideClipboardPaste
 import com.quickscan.core.ui.component.LucideImage
 import com.quickscan.core.ui.component.LucideRepeat
@@ -94,12 +93,12 @@ import com.quickscan.core.ui.theme.QsTheme
 import com.quickscan.core.ui.theme.Radius
 import com.quickscan.core.ui.theme.Space
 import com.quickscan.data.barcode.PayloadType
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 private const val SAMPLE_QR_SEED = 20_240_919L
 
-/** Long edge, in pixels, that a photo is sampled down to before decoding. */
-private const val MAX_DECODE_EDGE = 1600
 
 @Composable
 fun ScannerScreen(
@@ -130,7 +129,9 @@ fun ScannerScreen(
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         scope.launch {
-            val bitmap = context.readBitmap(uri) ?: return@launch
+            val bitmap = withContext(Dispatchers.Default) {
+                uri?.let { DecodeImages.fromUri(context, it) }
+            } ?: return@launch
             viewModel.onImageSelected(bitmap)
         }
     }
@@ -173,6 +174,8 @@ fun ScannerScreen(
     LaunchedEffect(state.pasteOpen) {
         if (state.pasteOpen) listState.animateScrollToItem(PASTE_CARD_ITEM)
     }
+
+    LaunchedEffect(state.autoDetect) { controller.setAutoDetect(state.autoDetect) }
 
     LaunchedEffect(Unit) {
         viewModel.events.collect { event ->
@@ -220,6 +223,12 @@ fun ScannerScreen(
                         viewModel.onCameraSwitched(next)
                     },
                     onGallery = { imagePicker.launch(pickImageRequest()) },
+                    onShutter = {
+                        if (!state.busy) {
+                            viewModel.onCaptureStarted()
+                            controller.capture { code -> viewModel.onCaptured(code) }
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -341,6 +350,7 @@ private fun Viewfinder(
     onTorch: () -> Unit,
     onFlip: () -> Unit,
     onGallery: () -> Unit,
+    onShutter: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val palette = QsTheme.palette
@@ -423,6 +433,7 @@ private fun Viewfinder(
         } else {
             ShutterControls(
                 onGallery = onGallery,
+                onShutter = onShutter,
                 onFlip = onFlip,
                 modifier = Modifier.align(Alignment.BottomCenter),
             )
@@ -495,10 +506,12 @@ private fun AutoDetectPill(active: Boolean, modifier: Modifier = Modifier) {
 @Composable
 private fun ShutterControls(
     onGallery: () -> Unit,
+    onShutter: () -> Unit,
     onFlip: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val palette = QsTheme.palette
+    val shutterLabel = stringResource(R.string.shutter)
 
     Row(
         modifier = modifier.height(92.dp),
@@ -522,7 +535,10 @@ private fun ShutterControls(
         }
 
         Box(
-            modifier = Modifier.size(82.dp),
+            modifier = Modifier
+                .size(82.dp)
+                .clickable(onClick = onShutter)
+                .semantics { contentDescription = shutterLabel },
             contentAlignment = Alignment.Center,
         ) {
             Box(
@@ -670,43 +686,6 @@ private fun Context.hasCameraPermission(): Boolean =
     ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
         PackageManager.PERMISSION_GRANTED
 
-/**
- * Decodes a picked photo. A modern camera photo is 12MP or more, and handing
- * that to ZXing means a 50MB int array plus its binarizer buffers, which is
- * slow enough to look like a hang and memory-hungry enough to matter. No code
- * needs that much resolution, so the image is sampled down first.
- */
-private fun Context.readBitmap(uri: Uri): Bitmap? {
-    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-    runCatching {
-        contentResolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it, null, bounds)
-        }
-    }
-
-    val options = BitmapFactory.Options().apply {
-        inSampleSize = sampleSizeFor(bounds.outWidth, bounds.outHeight, MAX_DECODE_EDGE)
-    }
-    val bitmap = runCatching {
-        contentResolver.openInputStream(uri)?.use {
-            BitmapFactory.decodeStream(it, null, options)
-        }
-    }.getOrNull()
-
-    return bitmap
-}
-
-private fun sampleSizeFor(width: Int, height: Int, maxEdge: Int): Int {
-    if (width <= 0 || height <= 0) return 1
-    var sample = 1
-    var longEdge = maxOf(width, height)
-    while (longEdge / 2 >= maxEdge) {
-        longEdge /= 2
-        sample *= 2
-    }
-    return sample
-}
-
 private fun Context.copyToClipboard(text: String) {
     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     clipboard.setPrimaryClip(ClipData.newPlainText("QuickScan", text))
@@ -717,6 +696,7 @@ private fun Context.showToast(message: ScannerMessage) {
         ScannerMessage.NoCodeInImage -> getString(R.string.no_image_selected)
         ScannerMessage.NothingToDecode -> getString(R.string.create_fill_required)
         ScannerMessage.NotAValidLink -> getString(R.string.paste_link_hint)
+        ScannerMessage.NothingInViewfinder -> getString(R.string.no_code_in_viewfinder)
     }
     Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
 }

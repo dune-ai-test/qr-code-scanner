@@ -5,6 +5,8 @@ import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.TorchState
 import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageCapture
+import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.Preview
 import androidx.camera.core.resolutionselector.AspectRatioStrategy
 import androidx.camera.core.resolutionselector.ResolutionSelector
@@ -14,6 +16,7 @@ import android.util.Size
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.quickscan.data.barcode.DecodedCode
+import com.quickscan.core.qr.DecodeImages
 import com.quickscan.data.barcode.ZxingDecoder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +50,7 @@ class CameraController(
 
     private var provider: ProcessCameraProvider? = null
     private var analysis: ImageAnalysis? = null
+    private var imageCapture: ImageCapture? = null
     private var camera: Camera? = null
     private var lifecycleOwner: LifecycleOwner? = null
     private var preview: Preview? = null
@@ -57,6 +61,18 @@ class CameraController(
 
     @Volatile
     private var paused: Boolean = false
+
+    @Volatile
+    private var autoDetect: Boolean = true
+
+    /**
+     * With auto-detect off the analysis stream still has to run to keep the
+     * preview and the reticle alive, but every frame is dropped without
+     * decoding. The shutter button is the only way a code gets read.
+     */
+    fun setAutoDetect(enabled: Boolean) {
+        autoDetect = enabled
+    }
 
     val analysisExecutor: ExecutorService = Executors.newSingleThreadExecutor()
 
@@ -108,11 +124,17 @@ class CameraController(
             .apply { setAnalyzer(analysisExecutor, ::analyse) }
         analysis = analysisUseCase
 
+        val captureUseCase = ImageCapture.Builder()
+            .setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+            .build()
+        imageCapture = captureUseCase
+
         val selector = CameraSelector.Builder().requireLensFacing(lensFacing).build()
+        val useCases = arrayOf(previewUseCase, analysisUseCase, captureUseCase)
 
         runCatching {
             cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(owner, selector, previewUseCase, analysisUseCase)
+            cameraProvider.bindToLifecycle(owner, selector, *useCases)
         }.onFailure {
             // Devices with a single lens fall back to whatever camera exists.
             runCatching {
@@ -120,19 +142,55 @@ class CameraController(
                 cameraProvider.bindToLifecycle(
                     owner,
                     CameraSelector.DEFAULT_BACK_CAMERA,
-                    previewUseCase,
-                    analysisUseCase,
+                    *useCases,
                 )
-            }.onSuccess {
-                camera = it
-            }
-        }.onSuccess {
-            camera = it
+            }.onSuccess { camera = it }
+        }.onSuccess { camera = it }
+    }
+
+    /**
+     * Grabs a single frame and runs it through the same decoder the analyser
+     * uses. This is the shutter button's whole job, and it works whether
+     * auto-detect is on or off.
+     */
+    fun capture(onResult: (DecodedCode?) -> Unit) {
+        val captureUseCase = imageCapture
+        if (captureUseCase == null) {
+            onResult(null)
+            return
+        }
+        // Hold the analyser off while the frame is grabbed so the two do not
+        // compete for the single analysis thread.
+        paused = true
+        try {
+            captureUseCase.takePicture(
+                analysisExecutor,
+                object : ImageCapture.OnImageCapturedCallback() {
+                    override fun onCaptureSuccess(image: ImageProxy) {
+                        val code = try {
+                            image.use { DecodeImages.fromCapture(it)?.let(decoder::decode) }
+                        } catch (_: Throwable) {
+                            null
+                        }
+                        onResult(code)
+                    }
+
+                    override fun onError(exception: ImageCaptureException) {
+                        onResult(null)
+                    }
+                },
+            )
+        } catch (_: Throwable) {
+            onResult(null)
+        } finally {
+            // The analyser resumes on the next resume() or immediately if the
+            // caller is still in auto-detect mode.
+            if (autoDetect) paused = false
         }
     }
 
     private fun analyse(image: androidx.camera.core.ImageProxy) {
-        if (paused || !decoding.compareAndSet(false, true)) {
+        if (paused || !autoDetect || !decoding.compareAndSet(false, true)) {
             image.close()
             return
         }

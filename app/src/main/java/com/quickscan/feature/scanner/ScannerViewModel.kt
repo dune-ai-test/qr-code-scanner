@@ -45,7 +45,13 @@ sealed interface ScannerEvent {
     data class SignalScanFeedback(val vibrate: Boolean, val playSound: Boolean) : ScannerEvent
 }
 
-enum class ScannerMessage { NoCodeInImage, NothingToDecode, NotAValidLink }
+enum class ScannerMessage {
+    NoCodeInImage,
+    NothingToDecode,
+    NotAValidLink,
+    /** The shutter button grabbed a frame with no readable code in it. */
+    NothingInViewfinder,
+}
 
 @HiltViewModel
 class ScannerViewModel @Inject constructor(
@@ -102,6 +108,24 @@ class ScannerViewModel @Inject constructor(
                 accept(code, ScanSource.Image)
             }
         }
+    }
+
+    /**
+     * The shutter button: grab a frame and decode it, whatever auto-detect is
+     * set to. Shares [accept] with the automatic path so both behave the same.
+     */
+    fun onCaptureStarted() = _state.update { it.copy(busy = true) }
+
+    fun onCaptured(code: DecodedCode?) {
+        if (code == null) {
+            _state.update { it.copy(busy = false) }
+            viewModelScope.launch {
+                _events.send(ScannerEvent.Message(ScannerMessage.NothingInViewfinder))
+            }
+            return
+        }
+        _state.update { it.copy(busy = false) }
+        accept(code, ScanSource.Camera)
     }
 
     fun onPasteChanged(value: String) = _state.update { it.copy(pasteText = value) }
