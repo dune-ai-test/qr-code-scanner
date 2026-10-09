@@ -44,7 +44,7 @@ private fun lucide(name: String, block: PathBuilder.() -> Unit): ImageVector =
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).addPath(
-        pathData = PathBuilder().apply(block).nodes(),
+        pathData = PathBuilder().apply(block).nodes,
         fill = null,
         stroke = SolidColor(Color.Black),
         strokeLineWidth = 2f,
