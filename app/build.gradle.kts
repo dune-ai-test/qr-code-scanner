@@ -21,7 +21,8 @@ android {
 
     defaultConfig {
         applicationId = "com.quickscan"
-        minSdk = 26
+        // API 27 for display-cutout handling, which an edge-to-edge scanner wants.
+        minSdk = 27
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
