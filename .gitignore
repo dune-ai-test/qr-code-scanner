@@ -26,3 +26,7 @@ app/src/main/res/font/*.ttf
 
 # Device screenshots captured while driving the app over adb.
 shots/
+
+# Python bytecode from the tooling scripts.
+__pycache__/
+*.pyc
