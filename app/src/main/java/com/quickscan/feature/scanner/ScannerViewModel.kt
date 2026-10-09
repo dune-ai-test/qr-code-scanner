@@ -93,7 +93,9 @@ class ScannerViewModel @Inject constructor(
         if (_state.value.busy) return
         _state.update { it.copy(busy = true) }
         viewModelScope.launch {
+            android.util.Log.i("QsDecode", "bitmap ${bitmap.width}x${bitmap.height} cfg=${bitmap.config}")
             val code = withContext(Dispatchers.Default) { decoder.decode(bitmap) }
+            android.util.Log.i("QsDecode", "decode result = $code")
             if (code == null) {
                 _state.update { it.copy(busy = false) }
                 _events.send(ScannerEvent.Message(ScannerMessage.NoCodeInImage))

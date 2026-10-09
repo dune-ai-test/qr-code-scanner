@@ -6,6 +6,7 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.AudioManager
 import android.media.ToneGenerator
@@ -666,9 +667,16 @@ private fun Context.hasCameraPermission(): Boolean =
     ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) ==
         PackageManager.PERMISSION_GRANTED
 
-private fun Context.readBitmap(uri: Uri) = runCatching {
-    contentResolver.openInputStream(uri)?.use(BitmapFactory::decodeStream)
-}.getOrNull()
+private fun Context.readBitmap(uri: Uri): Bitmap? {
+    val result = runCatching {
+        contentResolver.openInputStream(uri)?.use(BitmapFactory::decodeStream)
+    }
+    android.util.Log.i(
+        "QsDecode",
+        "readBitmap ${uri.lastPathSegment} ok=${result.isSuccess} value=${result.getOrNull()?.let { "${it.width}x${it.height}" }} err=${result.exceptionOrNull()}",
+    )
+    return result.getOrNull()
+}
 
 private fun Context.copyToClipboard(text: String) {
     val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
