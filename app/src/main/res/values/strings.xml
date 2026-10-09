@@ -1,0 +1,192 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">QuickScan</string>
+
+    <!-- Onboarding: welcome -->
+    <string name="onboarding_title">Scan anything, instantly.</string>
+    <string name="onboarding_subtitle">QR codes, barcodes and Wi-Fi networks — decoded right on your device in a fraction of a second.</string>
+    <string name="value_instant_title">Instant decoding</string>
+    <string name="value_instant_subtitle">Recognised as soon as it enters frame</string>
+    <string name="value_offline_title">Works offline</string>
+    <string name="value_offline_subtitle">No account or internet needed</string>
+    <string name="value_private_title">Private by default</string>
+    <string name="value_private_subtitle">Nothing leaves your phone</string>
+    <string name="get_started">Get started</string>
+
+    <!-- Onboarding: name -->
+    <string name="nav_set_up">Set up</string>
+    <string name="name_title">What should we call you?</string>
+    <string name="name_subtitle">Used to label saved scans and shared exports. It stays on this device.</string>
+    <string name="your_name_label">YOUR NAME</string>
+    <string name="name_hint">Your name</string>
+    <string name="name_clear">Clear name</string>
+    <string name="stored_locally">Stored locally · never uploaded</string>
+    <string name="continue_label">Continue</string>
+    <string name="skip_for_now">Skip for now</string>
+
+    <!-- Navigation -->
+    <string name="nav_scan_result">Scan result</string>
+    <string name="nav_history">History</string>
+    <string name="nav_settings">Settings</string>
+    <string name="nav_create">New QR code</string>
+
+    <!-- Tab bar -->
+    <string name="tab_scan">Scan</string>
+    <string name="tab_history">History</string>
+    <string name="tab_create">Create</string>
+    <string name="tab_settings">Settings</string>
+
+    <!-- Scanner -->
+    <string name="scanner_headline">Point at a code</string>
+    <string name="scanner_subhead">QR, EAN, Data Matrix and Wi-Fi codes are detected the moment they enter the frame.</string>
+    <string name="auto_detect">Auto-detect</string>
+    <string name="toggle_torch">Toggle torch</string>
+    <string name="toggle_camera">Switch camera</string>
+    <string name="shutter">Scan now</string>
+    <string name="scan_image">Scan image</string>
+    <string name="paste_link">Paste link</string>
+    <string name="recent_scans">Recent scans</string>
+    <string name="see_all">See all</string>
+    <string name="camera_permission_title">Camera access needed</string>
+    <string name="camera_permission_body">QuickScan decodes codes on-device, which needs the camera. Nothing is uploaded.</string>
+    <string name="camera_permission_action">Allow camera</string>
+    <string name="camera_permission_settings">Open settings</string>
+    <string name="paste_link_title">Paste a link</string>
+    <string name="paste_link_hint">https://</string>
+    <string name="no_image_selected">No readable code found in that image</string>
+
+    <!-- Result: shared -->
+    <string name="open_link">Open link</string>
+    <string name="join_network">Join network</string>
+    <string name="delete_from_history">Delete from history</string>
+    <string name="detail_type">Type</string>
+    <string name="detail_scanned">Scanned</string>
+    <string name="scanned_at">Scanned %1$s</string>
+    <string name="dial_contact">Call</string>
+    <string name="detail_length">Length</string>
+    <string name="detail_source">Source</string>
+    <string name="source_camera">Camera</string>
+    <string name="source_image">Image</string>
+    <string name="characters">%1$d characters</string>
+    <string name="copy_action">Copy to clipboard</string>
+    <string name="copied">Copied</string>
+    <string name="share_action">Share</string>
+    <string name="more_actions">More actions</string>
+
+    <!-- Result: types -->
+    <string name="type_website">Website</string>
+    <string name="type_wifi">Wi-Fi</string>
+    <string name="type_text">Text</string>
+    <string name="type_contact">Contact</string>
+    <string name="type_product">Product</string>
+    <string name="detail_website_url">Website URL</string>
+    <string name="detail_plain_text">Plain text</string>
+    <string name="detail_contact_card">Contact card</string>
+    <string name="detail_barcode_number">Barcode number</string>
+
+    <!-- Result: URL safety -->
+    <string name="safety_reason_plain_http">Opens over plain HTTP — traffic is not encrypted</string>
+    <string name="safety_reason_ip_host">Host is a bare IP address rather than a domain</string>
+    <string name="safety_reason_punycode">Host uses punycode and may imitate another domain</string>
+    <string name="safety_reason_credentials">Credentials are embedded in the address</string>
+    <string name="safety_reason_tld">Top-level domain is frequently used for abuse</string>
+    <string name="safety_reason_keywords">Address matches a known phishing pattern</string>
+    <string name="safety_reason_lookalike">Address resembles a well-known brand written incorrectly</string>
+    <string name="safety_reason_shortened">Address is shortened, so its destination is hidden</string>
+
+    <!-- Result: Wi-Fi -->
+    <string name="wifi_ssid_label">SSID</string>
+    <string name="wifi_security_label">Security</string>
+    <string name="reveal_password">Reveal password</string>
+    <string name="hide_password">Hide password</string>
+
+    <!-- History -->
+    <string name="stat_total_scans">Total scans</string>
+    <string name="stat_this_week">This week</string>
+    <string name="stat_links">Links</string>
+    <string name="filter_all">All</string>
+    <string name="filter_links">Links</string>
+    <string name="filter_wifi">Wi-Fi</string>
+    <string name="filter_text">Text</string>
+    <string name="search_history">Search history</string>
+    <string name="search_hint">Search scans</string>
+    <string name="empty_no_scans_title">No scans yet</string>
+    <string name="empty_no_scans_body">Every code you scan lands here, grouped by type and date so you can find it again instantly.</string>
+    <string name="empty_scan_first">Scan your first code</string>
+    <string name="empty_you_can_also_scan">YOU CAN ALSO SCAN</string>
+    <string name="suggestion_wifi_title">Wi-Fi passwords</string>
+    <string name="suggestion_wifi_subtitle">Join a network in one tap</string>
+    <string name="suggestion_link_title">Website links</string>
+    <string name="suggestion_link_subtitle">Open instantly, safely checked</string>
+    <string name="suggestion_contact_title">Contact cards</string>
+    <string name="suggestion_contact_subtitle">Save straight to your address book</string>
+    <string name="empty_search_title">No matches</string>
+    <string name="empty_search_body">Nothing in your history matches that search.</string>
+
+    <!-- Create -->
+    <string name="create_content_type">CONTENT TYPE</string>
+    <string name="create_type_link">Link</string>
+    <string name="create_type_text">Text</string>
+    <string name="create_type_wifi">Wi-Fi</string>
+    <string name="create_type_contact">Contact</string>
+    <string name="create_field_label">Label</string>
+    <string name="create_field_url">URL</string>
+    <string name="create_field_note">Note</string>
+    <string name="create_field_text">Text</string>
+    <string name="create_field_ssid">Network name</string>
+    <string name="create_field_password">Password</string>
+    <string name="create_field_security">Security</string>
+    <string name="create_field_hidden">Hidden network</string>
+    <string name="create_field_name">Full name</string>
+    <string name="create_field_phone">Phone</string>
+    <string name="create_field_email">Email</string>
+    <string name="create_style_colours">Style &amp; colours</string>
+    <string name="create_save">Save QR code</string>
+    <string name="create_preview_placeholder">Enter details to preview</string>
+    <string name="create_fill_required">Fill in the required fields first</string>
+    <string name="create_saved">QR code saved</string>
+    <string name="create_security_wpa">WPA/WPA2</string>
+
+    <!-- Settings -->
+    <string name="settings_profile_placeholder">Your profile</string>
+    <string name="settings_section_scanner">SCANNER</string>
+    <string name="settings_section_appearance">APPEARANCE</string>
+    <string name="settings_section_storage">HISTORY &amp; STORAGE</string>
+    <string name="settings_section_permissions">PERMISSIONS</string>
+    <string name="settings_section_about">ABOUT</string>
+    <string name="setting_auto_detect">Auto-detect codes</string>
+    <string name="setting_default_camera">Default camera</string>
+    <string name="setting_camera_rear">Rear</string>
+    <string name="setting_camera_front">Front</string>
+    <string name="setting_copy_automatically">Copy automatically</string>
+    <string name="setting_scan_sound">Scan sound</string>
+    <string name="setting_vibrate">Vibrate on scan</string>
+    <string name="setting_dark_mode">Dark mode</string>
+    <string name="setting_accent">Accent colour</string>
+    <string name="setting_larger_text">Larger text</string>
+    <string name="setting_retention">Keep history for %1$d days</string>
+    <string name="setting_retention_forever">Keep history forever</string>
+    <string name="retention_days">%1$d days</string>
+    <string name="retention_day">1 day</string>
+    <string name="retention_forever">Always</string>
+    <string name="setting_storage_used">Storage used</string>
+    <string name="setting_clear_history">Clear scan history</string>
+    <string name="setting_clear_history_confirm_title">Clear scan history?</string>
+    <string name="setting_clear_history_confirm_body">This permanently removes every saved scan from this device. It cannot be undone.</string>
+    <string name="setting_clear_history_confirm">Clear history</string>
+    <string name="setting_cancel">Cancel</string>
+    <string name="permission_camera">Camera</string>
+    <string name="permission_photo_library">Photo library</string>
+    <string name="permission_notifications">Notifications</string>
+    <string name="permission_allowed">Allowed</string>
+    <string name="permission_denied">Denied</string>
+    <string name="permission_off">Off</string>
+    <string name="setting_version">Version</string>
+    <string name="setting_whats_new">What\'s new</string>
+
+    <!-- Generic -->
+    <string name="action_back">Back</string>
+    <string name="action_done">Done</string>
+    <string name="error_no_browser">No app can open this link</string>
+    <string name="error_no_camera_app">No app can join this network</string>
+</resources>

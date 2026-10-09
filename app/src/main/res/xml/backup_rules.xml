@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 11 and below: back up the scan history and preferences. -->
+<full-backup-content>
+    <include
+        domain="database"
+        path="quickscan.db" />
+    <include
+        domain="file"
+        path="datastore/" />
+</full-backup-content>

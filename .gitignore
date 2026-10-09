@@ -1,0 +1,25 @@
+*.iml
+.gradle
+/local.properties
+/.idea
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+/app/release
+/app/debug
+
+# Signing material must never be committed.
+*.jks
+*.keystore
+keystore.properties
+
+# Design mockups the app was ported from; reference material, not source.
+/ui/
+
+# Vendored typeface binaries (Geist) are fetched by tooling, not tracked.
+app/src/main/res/font/*.ttf
+# Editor and agent scratch files.
+.zcode/

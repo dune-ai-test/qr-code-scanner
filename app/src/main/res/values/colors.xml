@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Window colours only; the running palette lives in core/ui/theme/Color.kt. -->
+    <color name="quickscan_window">#FFFFFF</color>
+    <color name="quickscan_ink">#111318</color>
+    <color name="quickscan_accent">#3D8FD1</color>
+    <color name="quickscan_launcher_background">#0C0D10</color>
+</resources>
