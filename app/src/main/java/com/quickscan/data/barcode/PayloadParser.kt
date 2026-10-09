@@ -205,7 +205,8 @@ object PayloadParser {
         for (ch in input) {
             when {
                 escaped -> {
-                    current.append(ch)
+                    // Keep the escape so unescapeWifi consumes it exactly once.
+                    current.append('\\').append(ch)
                     escaped = false
                 }
 

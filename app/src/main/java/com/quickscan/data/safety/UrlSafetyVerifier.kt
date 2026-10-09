@@ -68,8 +68,15 @@ class UrlSafetyVerifier {
         return SafetyVerdict(url = url, reasons = reasons.distinct())
     }
 
-    private fun hostOf(authority: String): String =
-        authority.substringAfterLast('@').substringBefore(':')
+    /** Strips userinfo and port, keeping IPv6 literals bracketed. */
+    private fun hostOf(authority: String): String {
+        val afterUserInfo = authority.substringAfterLast('@')
+        return if (afterUserInfo.startsWith("[")) {
+            afterUserInfo.substringBefore(']') + "]"
+        } else {
+            afterUserInfo.substringBefore(':')
+        }
+    }
 
     private fun isIpLiteral(host: String): Boolean {
         if (host.isBlank()) return false
@@ -80,26 +87,45 @@ class UrlSafetyVerifier {
 
     /**
      * Catches domains that copy a well-known name with a substitution, such as
-     * `paypa1-secure.com` or `micros0ft-login.net`.
+     * `paypa1-secure.com` or `micros0ft-login.net`. Digits are folded back to
+     * their letter lookalikes before the comparison, because `1` for `l` and
+     * `0` for `o` is the commonest trick.
      */
     private fun imitationOf(host: String): Boolean {
         val labels = host.split('.').filter { it.isNotBlank() }
         if (labels.size < 2) return false
         val name = labels[0]
         if (name.length < 4) return false
+
         val hasDigitSubstitution = name.any { it.isDigit() }
         val hasSeparator = name.contains('-') || name.contains('_')
         if (!hasDigitSubstitution && !hasSeparator) return false
         if (!name.any { it.isLetter() }) return false
 
+        val folded = name.map { if (DIGIT_LOOKALIKES[it] != null) DIGIT_LOOKALIKES[it]!! else it }
+            .joinToString("")
+
         return IMITATED_BRANDS.any { brand ->
-            name.equals(brand, ignoreCase = true) ||
-                name.startsWith(brand) || name.endsWith(brand) ||
-                name.contains(brand)
+            folded.equals(brand, ignoreCase = true) ||
+                folded.startsWith(brand) || folded.endsWith(brand) ||
+                folded.contains(brand)
         }
     }
 
     private companion object {
+        /** Digits used to imitate letters inside a host name. */
+        val DIGIT_LOOKALIKES = mapOf(
+            '0' to 'o',
+            '1' to 'l',
+            '3' to 'e',
+            '4' to 'a',
+            '5' to 's',
+            '6' to 'g',
+            '7' to 't',
+            '8' to 'b',
+            '9' to 'g',
+        )
+
         val SUSPICIOUS_TLDS = listOf(
             "zip", "mov", "tk", "ml", "ga", "cf", "gq", "top", "xyz", "click", "work",
         )

@@ -84,8 +84,9 @@ object QrPlaceholder {
         drawFinder(size - 7, 0)
         drawFinder(0, size - 7)
 
-        // Timing patterns run along row 6 and column 6.
-        for (i in 0 until size) {
+        // Timing patterns run along row 6 and column 6, spanning only the
+        // gap between the finder separators rather than crossing them.
+        for (i in 8 until size - 8) {
             val dark = i % 2 == 0
             mark(6, i, dark, keep = true)
             mark(i, 6, dark, keep = true)

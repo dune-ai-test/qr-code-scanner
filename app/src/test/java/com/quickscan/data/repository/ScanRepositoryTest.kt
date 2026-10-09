@@ -193,7 +193,7 @@ class ScanRepositoryTest {
         repo.record(url, ScanSource.Camera)
         val afterOne = repo.storageUsage()
 
-        repo.record(url, ScanSource.Camera, at = 60_000L)
+        repo.record(url, ScanSource.Camera, at = NOW + 60_000L)
         val afterTwo = repo.storageUsage()
 
         assertEquals(1, afterOne.scanCount)

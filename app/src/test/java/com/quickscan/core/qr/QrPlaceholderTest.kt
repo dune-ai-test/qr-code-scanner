@@ -94,7 +94,7 @@ class QrPlaceholderTest {
         assertTrue("alignment outer corner", grid[16, 16])
         assertTrue("alignment core", grid[18, 18])
         assertFalse("alignment gap", grid[17, 17])
-        assertFalse("alignment ring gap", grid[16, 18])
+        assertFalse("alignment ring gap", grid[17, 18])
     }
 
     @Test
