@@ -639,6 +639,7 @@ private fun PasteLinkCard(
                 label = stringResource(R.string.action_done),
                 onClick = onSubmit,
                 enabled = canSubmit,
+                disabledContainer = palette.surfaceElevated,
                 modifier = Modifier.weight(1f),
             )
             QSSecondaryButton(

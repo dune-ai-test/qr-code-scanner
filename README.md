@@ -89,6 +89,22 @@ keyPassword=…
 
 The design calls for **Geist** (Vercel, SIL Open Font License). `AppTypeface.kt` currently maps the family to `FontFamily.Default` so the build stays green with no vendored binaries. To switch, drop `Geist-Regular.ttf`, `Geist-Medium.ttf`, `Geist-SemiBold.ttf` and `Geist-Bold.ttf` into `app/src/main/res/font/` and replace the body of `AppTypeface.family` with the `FontFamily(...)` call shown in that file. The type scale — sizes, leading and tracking — is already correct and is not affected.
 
+## Icons
+
+Icons come from [Lucide](https://lucide.dev) v1.54.0 (ISC). The published SVGs
+are vendored under `tools/lucide/`, and `tools/lucide_to_kt.py` turns them into
+the stroke-only `ImageVector`s in `LucideIcons.kt` — rewriting `circle`,
+`ellipse`, `rect`, `line` and `polyline` as path data first, then parsing the
+result into Compose calls. Regenerate after swapping an SVG:
+
+```bash
+python tools/lucide_to_kt.py tools/lucide     app/src/main/java/com/quickscan/core/ui/component/LucideIcons.kt
+```
+
+Keeping the icons generated rather than hand-written matters: an approximate
+path looks plausible in code review and renders as an unrecognisable shape on
+the device.
+
 ## Procedural QR artwork
 
 Screens that show a code without carrying real content (the onboarding hero, the scanner's permission state) use `QrPlaceholder`, a deterministic generator seeded by a long. It emits a true module grid — three 7×7 finder patterns with separators, row/column-6 timing lines, the spec-derived alignment block, the always-dark module and reserved format-information areas — with the data area filled from a seeded LCG. The same seed always paints the same code, and each call site picks its own seed.

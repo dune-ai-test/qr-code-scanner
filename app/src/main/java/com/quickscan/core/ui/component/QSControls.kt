@@ -61,6 +61,7 @@ fun QSPrimaryButton(
     enabled: Boolean = true,
     container: Color = QsTheme.palette.accent,
     content: Color = QsTheme.palette.accentOn,
+    disabledContainer: Color = QsTheme.palette.surface,
 ) {
     val palette = QsTheme.palette
     val text = QsTheme.text
@@ -75,7 +76,7 @@ fun QSPrimaryButton(
                 spotColor = container,
             )
             .clip(Radius.lgPlus)
-            .background(if (enabled) container else palette.surface)
+            .background(if (enabled) container else disabledContainer)
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = Space.xxl),
         horizontalArrangement = Arrangement.Center,
