@@ -1,6 +1,7 @@
 package com.quickscan.feature.settings
 
 import android.Manifest
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -101,7 +102,7 @@ fun SettingsScreen(
 
     var cameraGranted by remember { mutableStateOf(context.isGranted(Manifest.permission.CAMERA)) }
     var imagesGranted by remember {
-        mutableStateOf(context.isGranted(READ_MEDIA_IMAGES))
+        mutableStateOf(context.isGranted(Manifest.permission.READ_MEDIA_IMAGES))
     }
     var notificationsGranted by remember {
         mutableStateOf(

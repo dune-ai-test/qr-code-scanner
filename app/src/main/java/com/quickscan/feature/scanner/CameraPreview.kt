@@ -5,6 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 
 /**
@@ -17,8 +18,9 @@ fun CameraPreview(
     controller: CameraController,
     modifier: Modifier = Modifier,
 ) {
-    val previewView = remember {
-        PreviewView(context = null).apply {
+    val context = LocalContext.current
+    val previewView = remember(context) {
+        PreviewView(context).apply {
             implementationMode = PreviewView.ImplementationMode.COMPATIBLE
             scaleType = PreviewView.ScaleType.FILL_CENTER
         }

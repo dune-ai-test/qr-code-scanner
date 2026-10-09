@@ -68,7 +68,7 @@ private fun Accent.Set() = when (this) {
     Accent.Clay -> AccentSet(Color(0xFFC4632B), Color(0xFFFFFFFF), Color(0xFFFAEFE2), Color(0xFFB25A24))
 }
 
-internal fun lightPalette(accent: Accent) = with(accent.Set()) {
+internal fun lightPalette(preset: Accent) = with(preset.Set()) {
     QsPalette(
         bg = Color(0xFFFFFFFF),
         surface = Color(0xFFF4F5F7),
@@ -100,7 +100,7 @@ internal fun lightPalette(accent: Accent) = with(accent.Set()) {
     )
 }
 
-internal fun darkPalette(accent: Accent) = with(accent.Set()) {
+internal fun darkPalette(preset: Accent) = with(preset.Set()) {
     QsPalette(
         bg = Color(0xFF0B0C0F),
         surface = Color(0xFF16181D),

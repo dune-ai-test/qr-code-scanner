@@ -5,6 +5,9 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.net.wifi.WifiEnterpriseConfig
+import android.net.wifi.WifiNetworkSuggestion
+import android.os.Build
 import android.provider.Settings
 import android.widget.Toast
 import androidx.compose.foundation.background
@@ -567,41 +570,30 @@ private fun Context.sharePayload(payload: ScannedPayload) {
 }
 
 /**
- * Android 10+ can add a network directly from a suggestion; older releases
- * fall back to opening Wi-Fi settings, which is the closest available action.
+ * Android 10 and up can add a network straight from a Wi-Fi suggestion; older
+ * releases, and devices without the settings screen, fall back to Wi-Fi settings.
  */
 private fun Context.joinWifi(payload: ScannedPayload.Wifi) {
-    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.Q) {
-        val suggestion = android.net.wifi.WifiNetworkSuggestion.Builder()
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        val builder = WifiNetworkSuggestion.Builder()
             .setSsid(payload.ssid)
             .setIsHiddenSsid(payload.hidden)
-            .apply {
-                when (payload.encryption.uppercase()) {
-                    "NOPASS", "NONE", "" -> setWpa2EnterpriseConfig(
-                        android.net.wifi.WifiEnterpriseConfig.Builder().build(),
-                    )
+        if (payload.encryption.uppercase() in setOf("NOPASS", "NONE", "")) {
+            builder.setWpa2EnterpriseConfig(WifiEnterpriseConfig.Builder().build())
+        } else {
+            builder.setWpa2Passphrase(payload.password)
+        }
 
-                    else -> setWpa2Passphrase(payload.password)
-                }
-            }
-            .build()
-
-        val intent = Intent(
-            android.provider.Settings.ACTION_WIFI_ADD_NETWORKS,
-            android.net.Uri.Builder()
-                .scheme("android")
-                .authority("com.android.wifi.WifiConfigController")
-                .appendQueryParameter(
-                    "suggestion",
-                    android.net.wifi.WifiNetworkSuggestion.toString(suggestion),
-                )
-                .build(),
-        )
-        runCatching { startActivity(intent) }
-            .onFailure {
-                startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
-            }
-        return
+        val intent = Intent(Settings.ACTION_WIFI_ADD_NETWORKS).apply {
+            putParcelableArrayListExtra(
+                Settings.EXTRA_WIFI_NETWORK_LIST,
+                arrayListOf(builder.build()),
+            )
+        }
+        if (intent.resolveActivity(packageManager) != null) {
+            startActivity(intent)
+            return
+        }
     }
     startActivity(Intent(Settings.ACTION_WIFI_SETTINGS))
 }

@@ -3,6 +3,7 @@ package com.quickscan.feature.scanner
 import android.content.Context
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.TorchState
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -122,9 +123,9 @@ class CameraController(
     }
 
     fun toggleTorch(): Boolean {
-        val control = camera?.cameraControl ?: return false
-        val next = control.torchState.value != 1
-        control.enableTorch(next)
+        val camera = camera ?: return false
+        val next = camera.cameraInfo.torchState.value != TorchState.ON
+        camera.cameraControl.enableTorch(next)
         return next
     }
 

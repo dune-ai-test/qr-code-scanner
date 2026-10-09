@@ -71,6 +71,8 @@ android {
 
     buildFeatures {
         compose = true
+        // The Settings screen shows the resolved version name.
+        buildConfig = true
     }
 
     packaging {

@@ -5,8 +5,8 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.graphics.vector.PathData
-import androidx.compose.ui.graphics.vector.PathParser
+import androidx.compose.ui.graphics.vector.PathBuilder
+
 import androidx.compose.ui.unit.dp
 
 /*
@@ -15,14 +15,14 @@ import androidx.compose.ui.unit.dp
  * width 2, round caps and joins — Lucide's defaults.
  */
 
-private fun PathParser.circle(cx: Float, cy: Float, r: Float) {
+private fun PathBuilder.circle(cx: Float, cy: Float, r: Float) {
     moveTo(cx - r, cy)
     arcTo(r, r, 0f, true, true, cx + r, cy)
     arcTo(r, r, 0f, true, true, cx - r, cy)
     close()
 }
 
-private fun PathParser.roundedRect(x: Float, y: Float, w: Float, h: Float, r: Float) {
+private fun PathBuilder.roundedRect(x: Float, y: Float, w: Float, h: Float, r: Float) {
     moveTo(x + r, y)
     horizontalLineTo(x + w - r)
     arcToRelative(r, r, 0f, true, false, r, r)
@@ -36,7 +36,7 @@ private fun PathParser.roundedRect(x: Float, y: Float, w: Float, h: Float, r: Fl
     close()
 }
 
-private fun lucide(name: String, block: PathParser.() -> Unit): ImageVector =
+private fun lucide(name: String, block: PathBuilder.() -> Unit): ImageVector =
     ImageVector.Builder(
         name = name,
         defaultWidth = 24.dp,
@@ -44,7 +44,7 @@ private fun lucide(name: String, block: PathParser.() -> Unit): ImageVector =
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).addPath(
-        pathData = PathData(block),
+        pathData = PathBuilder().apply(block),
         fill = null,
         stroke = SolidColor(Color.Black),
         strokeLineWidth = 2f,

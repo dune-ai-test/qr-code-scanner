@@ -48,14 +48,41 @@ object QrPlaceholder {
         val modules = BooleanArray(size * size)
         val reserved = BooleanArray(size * size)
 
-        fun mark(x: Int, y: Int, dark: Boolean, keep: Boolean) {
+        fun mark(x: Int, y: Int, dark: Boolean, keep: Boolean = false) {
             if (x !in 0 until size || y !in 0 until size) return
             modules[y * size + x] = dark
             if (keep) reserved[y * size + x] = true
         }
 
-        // Finder patterns and their one-module light separators.
-        forEachFinderOrigin(size) { fx, fy -> drawFinder(mark, fx, fy) }
+        // Finder pattern plus its one-module light separator.
+        fun drawFinder(ox: Int, oy: Int) {
+            for (y in -1..7) {
+                for (x in -1..7) {
+                    val ring = x in 0..6 && y in 0..6
+                    val dark = when {
+                        !ring -> false                                // separator
+                        x == 0 || x == 6 || y == 0 || y == 6 -> true   // outer ring
+                        x in 2..4 && y in 2..4 -> true                 // 3x3 core
+                        else -> false
+                    }
+                    mark(ox + x, oy + y, dark, keep = true)
+                }
+            }
+        }
+
+        fun drawAlignment(ox: Int, oy: Int) {
+            for (y in 0..4) {
+                for (x in 0..4) {
+                    val onRing = x == 0 || x == 4 || y == 0 || y == 4
+                    mark(ox + x, oy + y, onRing || (x == 2 && y == 2), keep = true)
+                }
+            }
+        }
+
+        // The three finder patterns.
+        drawFinder(0, 0)
+        drawFinder(size - 7, 0)
+        drawFinder(0, size - 7)
 
         // Timing patterns run along row 6 and column 6.
         for (i in 0 until size) {
@@ -70,7 +97,7 @@ object QrPlaceholder {
         for (cy in centers) {
             for (cx in centers) {
                 if (isFinderRegion(cx, cy, size)) continue
-                drawAlignment(mark, cx - 2, cy - 2)
+                drawAlignment(cx - 2, cy - 2)
             }
         }
 
@@ -110,44 +137,6 @@ object QrPlaceholder {
         return QrPlaceholderGrid(size, modules)
     }
 
-    private inline fun forEachFinderOrigin(size: Int, block: (Int, Int) -> Unit) {
-        block(0, 0)
-        block(size - 7, 0)
-        block(0, size - 7)
-    }
-
-    private fun drawFinder(
-        mark: (Int, Int, Boolean, Boolean) -> Unit,
-        ox: Int,
-        oy: Int,
-    ) {
-        for (y in -1..7) {
-            for (x in -1..7) {
-                val ring = x in 0..6 && y in 0..6
-                val dark = when {
-                    !ring -> false                                   // separator
-                    x == 0 || x == 6 || y == 0 || y == 6 -> true     // outer ring
-                    x in 2..4 && y in 2..4 -> true                   // 3x3 core
-                    else -> false
-                }
-                mark(ox + x, oy + y, dark, keep = true)
-            }
-        }
-    }
-
-    private fun drawAlignment(
-        mark: (Int, Int, Boolean, Boolean) -> Unit,
-        ox: Int,
-        oy: Int,
-    ) {
-        for (y in 0..4) {
-            for (x in 0..4) {
-                val ring = x == 0 || x == 4 || y == 0 || y == 4
-                val dark = ring || (x == 2 && y == 2)
-                mark(ox + x, oy + y, dark, keep = true)
-            }
-        }
-    }
 
     /** Spec 6.3.1.1: count, step, then walk up from the bottom-right centre. */
     private fun alignmentCenters(version: Int, size: Int): List<Int> {

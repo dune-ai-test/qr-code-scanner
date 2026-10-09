@@ -50,11 +50,11 @@ fun QrPlaceholderView(
     Canvas(modifier) {
         val cell = size.minDimension / grid.size
         for (y in 0 until grid.size) {
-            for (run in grid.runsInRow(y)) {
+            for (segment in grid.runsInRow(y)) {
                 drawRect(
                     color = foreground,
-                    topLeft = Offset(run.first * cell, y * cell),
-                    size = Size(run.count * cell, cell),
+                    topLeft = Offset(segment.first * cell, y * cell),
+                    size = Size(segment.count() * cell, cell),
                 )
             }
         }
@@ -94,24 +94,24 @@ fun QrCornerBrackets(
 private fun DrawScope.drawMatrix(matrix: BitMatrix, color: Color) {
     val cell = size.minDimension / matrix.width
     for (y in 0 until matrix.height) {
-        var runStart = -1
+        var segmentStart = -1
         for (x in 0 until matrix.width) {
             val on = matrix[x, y]
-            if (on && runStart < 0) runStart = x
-            if (!on && runStart >= 0) {
+            if (on && segmentStart < 0) segmentStart = x
+            if (!on && segmentStart >= 0) {
                 drawRect(
                     color = color,
-                    topLeft = Offset(runStart * cell, y * cell),
-                    size = Size((x - runStart) * cell, cell),
+                    topLeft = Offset(segmentStart * cell, y * cell),
+                    size = Size((x - segmentStart) * cell, cell),
                 )
-                runStart = -1
+                segmentStart = -1
             }
         }
-        if (runStart >= 0) {
+        if (segmentStart >= 0) {
             drawRect(
                 color = color,
-                topLeft = Offset(runStart * cell, y * cell),
-                size = Size((matrix.width - runStart) * cell, cell),
+                topLeft = Offset(segmentStart * cell, y * cell),
+                size = Size((matrix.width - segmentStart) * cell, cell),
             )
         }
     }

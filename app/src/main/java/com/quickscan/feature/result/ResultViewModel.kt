@@ -55,7 +55,9 @@ class ResultViewModel @Inject constructor(
                 loading = false,
             ),
         )
-        scanRepository.observeScan(scanId).collect { emit(it.toState(payload, urlSafetyVerifier)) }
+        scanRepository.observeScan(scanId).collect { row ->
+            row?.let { emit(it.toState(payload, urlSafetyVerifier)) }
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ResultUiState())
 
     fun togglePasswordVisibility() {

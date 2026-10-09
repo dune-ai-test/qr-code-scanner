@@ -1,5 +1,7 @@
 package com.quickscan.core.ui.theme
 
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.dp
 
 /**
@@ -23,18 +25,22 @@ object Space {
     val hero = 36.dp
 }
 
+/**
+ * Corner radii as [Shape]s rather than bare [Dp]s, so every token can be handed
+ * straight to `clip`, `shadow`, `background` or `border`.
+ */
 object Radius {
-    val xs = 12.dp
-    val sm = 13.dp
-    val md = 14.dp
-    val lg = 16.dp
-    val lgPlus = 17.dp
-    val xl = 18.dp
-    val xlPlus = 20.dp
-    val xxl = 22.dp
-    val hero = 28.dp
-    val capsule = 31.dp
-    val pill = 1000.dp
+    val xs: Shape = RoundedCornerShape(12.dp)
+    val sm: Shape = RoundedCornerShape(13.dp)
+    val md: Shape = RoundedCornerShape(14.dp)
+    val lg: Shape = RoundedCornerShape(16.dp)
+    val lgPlus: Shape = RoundedCornerShape(17.dp)
+    val xl: Shape = RoundedCornerShape(18.dp)
+    val xlPlus: Shape = RoundedCornerShape(20.dp)
+    val xxl: Shape = RoundedCornerShape(22.dp)
+    val hero: Shape = RoundedCornerShape(28.dp)
+    val capsule: Shape = RoundedCornerShape(31.dp)
+    val pill: Shape = RoundedCornerShape(percent = 50)
 }
 
 /** Fixed heights shared by more than one screen. */
