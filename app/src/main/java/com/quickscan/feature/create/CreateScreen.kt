@@ -3,6 +3,7 @@ package com.quickscan.feature.create
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.graphics.Bitmap
 import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -24,9 +25,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.border
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
@@ -36,22 +40,32 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quickscan.R
+import com.quickscan.core.qr.QrExporter
+import com.quickscan.core.qr.QrLogo
+import com.quickscan.core.qr.QrRenderer
+import com.quickscan.core.qr.QrStyle
 import com.quickscan.core.ui.component.LucideCheck
+import com.quickscan.core.ui.component.LucideChevronDown
+import com.quickscan.core.ui.component.LucideChevronRight
+import com.quickscan.core.ui.component.LucideDownload
 import com.quickscan.core.ui.component.LucideLink
 import com.quickscan.core.ui.component.LucidePalette
 import com.quickscan.core.ui.component.LucideType
 import com.quickscan.core.ui.component.LucideUser
 import com.quickscan.core.ui.component.LucideWifi
 import com.quickscan.core.ui.component.QSNavBar
+import com.quickscan.core.ui.component.QSChip
 import com.quickscan.core.ui.component.QSPrimaryButton
 import com.quickscan.core.ui.component.QSSecondaryButton
 import com.quickscan.core.ui.component.QSSwitch
 import com.quickscan.core.ui.component.QSTextField
-import com.quickscan.core.ui.component.QrCodeView
 import com.quickscan.core.ui.component.QrPlaceholderView
+import com.quickscan.core.ui.component.QrStyledView
 import com.quickscan.core.ui.component.StatusBarSpacer
 import com.quickscan.core.ui.component.QSTabBar
 import com.quickscan.core.ui.component.tabBarClearance
@@ -68,8 +82,31 @@ private const val PREVIEW_PLACEHOLDER_SEED = 5_517_204L
  * doing: the file is going somewhere else, so it has to stand on its own.
  */
 private const val EXPORT_SIZE_PX = 1024
-private const val EXPORT_FOREGROUND = 0xFF111318.toInt()
-private const val EXPORT_BACKGROUND = 0xFFFFFFFF.toInt()
+
+/** Exported images sit on white whatever the app is doing. */
+private fun exportStyle(style: QrStyle) = style.copy(background = Color.White.toArgb())
+
+private val STYLE_SWATCHES = listOf(
+    0xFF111318.toInt(),
+    0xFF3D8FD1.toInt(),
+    0xFF3F8F5B.toInt(),
+    0xFFC4632B.toInt(),
+    0xFF5B5BD6.toInt(),
+)
+
+private val SHAPES = listOf(
+    0f to R.string.style_square,
+    0.18f to R.string.style_soft,
+    0.5f to R.string.style_round,
+)
+
+private val LOGO_CHOICES = listOf(
+    QrLogo.None to R.string.style_none,
+    QrLogo.App to R.string.style_app,
+    QrLogo.Link to R.string.style_link,
+    QrLogo.Wifi to R.string.style_wifi,
+    QrLogo.Contact to R.string.style_contact,
+)
 
 @Composable
 fun CreateScreen(
@@ -82,12 +119,11 @@ fun CreateScreen(
     val context = LocalContext.current
 
     // Encoding is real work, so it stays off the main thread.
-    val exportBitmap by produceState<Bitmap?>(null, state.payload) {
+    val exportBitmap by produceState<Bitmap?>(null, state.payload, state.style) {
         value = withContext(Dispatchers.Default) {
             state.payload
                 .takeIf { it.isNotBlank() }
-                ?.let { QrEncoder.encode(it) }
-                ?.let { QrEncoder.render(it, EXPORT_SIZE_PX, EXPORT_FOREGROUND, EXPORT_BACKGROUND) }
+                ?.let { QrRenderer.render(it, EXPORT_SIZE_PX, exportStyle(state.style)) }
         }
     }
 
@@ -127,7 +163,11 @@ fun CreateScreen(
                 .padding(horizontal = Space.x2xl),
             verticalArrangement = Arrangement.spacedBy(Space.x2xl),
         ) {
-            PreviewCard(payload = state.payload, caption = state.caption)
+            PreviewCard(
+                payload = state.payload,
+                caption = state.caption,
+                style = state.style,
+            )
 
             exportBitmap?.let { bitmap ->
                 ExportRow(
@@ -253,7 +293,20 @@ fun CreateScreen(
                 }
             }
 
-            StyleRow()
+            StyleRow(
+                open = state.styleOpen,
+                onToggle = { viewModel.setStyleOpen(!state.styleOpen) },
+            )
+
+            if (state.styleOpen) {
+                StylePanel(
+                    style = state.style,
+                    onForeground = viewModel::setForeground,
+                    onRadius = viewModel::setCornerRadius,
+                    onLogo = viewModel::setLogo,
+                    onReset = viewModel::resetStyle,
+                )
+            }
 
             QSPrimaryButton(
                 label = stringResource(R.string.create_save),
@@ -312,7 +365,7 @@ private fun ExportRow(
 }
 
 @Composable
-private fun PreviewCard(payload: String, caption: String) {
+private fun PreviewCard(payload: String, caption: String, style: QrStyle) {
     val palette = QsTheme.palette
     val text = QsTheme.text
 
@@ -339,10 +392,9 @@ private fun PreviewCard(payload: String, caption: String) {
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
-                QrCodeView(
-                    content = payload,
-                    foreground = palette.ink,
-                    background = palette.surfaceElevated,
+                QrStyledView(
+                    payload = payload,
+                    style = style.copy(background = Color.White.toArgb()),
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -469,14 +521,19 @@ private fun HiddenNetworkRow(hidden: Boolean, onToggle: (Boolean) -> Unit) {
 }
 
 @Composable
-private fun StyleRow() {
+private fun StyleRow(
+    open: Boolean,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val palette = QsTheme.palette
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(Radius.xl)
             .background(palette.surface)
+            .clickable(onClick = onToggle)
             .padding(horizontal = Space.xl, vertical = Space.lg),
         horizontalArrangement = Arrangement.spacedBy(Space.lg),
         verticalAlignment = Alignment.CenterVertically,
@@ -493,7 +550,108 @@ private fun StyleRow() {
             color = palette.ink,
             modifier = Modifier.weight(1f),
         )
+        Icon(
+            imageVector = if (open) LucideChevronDown else LucideChevronRight,
+            contentDescription = null,
+            tint = palette.inkFaint,
+            modifier = Modifier.size(16.dp),
+        )
     }
+}
+
+/** Colour, shape and logo controls for the code being created. */
+@Composable
+private fun StylePanel(
+    style: QrStyle,
+    onForeground: (Int) -> Unit,
+    onRadius: (Float) -> Unit,
+    onLogo: (QrLogo) -> Unit,
+    onReset: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val palette = QsTheme.palette
+
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(Radius.xl)
+            .background(palette.surface)
+            .padding(Space.xl),
+        verticalArrangement = Arrangement.spacedBy(Space.xl),
+    ) {
+        StyleLabel(stringResource(R.string.style_foreground))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(Space.md),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            STYLE_SWATCHES.forEach { colour ->
+                Swatch(
+                    colour = colour,
+                    selected = style.foreground == colour,
+                    onClick = { onForeground(colour) },
+                )
+            }
+            Spacer(Modifier.weight(1f))
+            Text(
+                text = stringResource(R.string.style_reset),
+                style = QsTheme.text.chip13,
+                color = palette.accentTintInk,
+                modifier = Modifier
+                    .clip(Radius.md)
+                    .clickable(onClick = onReset)
+                    .padding(horizontal = Space.md, vertical = Space.xs),
+            )
+        }
+
+        StyleLabel(stringResource(R.string.style_shape))
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+            SHAPES.forEach { (radius, label) ->
+                QSChip(
+                    label = stringResource(label),
+                    selected = style.cornerRadius == radius,
+                    onClick = { onRadius(radius) },
+                )
+            }
+        }
+
+        StyleLabel(stringResource(R.string.style_logo))
+        Row(horizontalArrangement = Arrangement.spacedBy(Space.xs)) {
+            LOGO_CHOICES.forEach { (logo, label) ->
+                QSChip(
+                    label = stringResource(label),
+                    selected = style.logo == logo,
+                    onClick = { onLogo(logo) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun StyleLabel(text: String) {
+    Text(
+        text = text,
+        style = QsTheme.text.chip13,
+        color = QsTheme.palette.inkFaint,
+    )
+}
+
+@Composable
+private fun Swatch(colour: Int, selected: Boolean, onClick: () -> Unit) {
+    val palette = QsTheme.palette
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(CircleShape)
+            .background(Color(colour))
+            .border(
+                width = if (selected) 3.dp else 1.dp,
+                color = if (selected) palette.accent else palette.hairline,
+                shape = CircleShape,
+            )
+            .clickable(onClick = onClick),
+    )
 }
 
 private fun Context.copyToClipboard(text: String) {

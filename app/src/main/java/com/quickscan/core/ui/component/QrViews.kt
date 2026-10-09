@@ -13,6 +13,8 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.quickscan.core.qr.QrEncoder
+import com.quickscan.core.qr.QrRenderer
+import com.quickscan.core.qr.QrStyle
 import com.quickscan.core.qr.QrPlaceholder
 import com.google.zxing.common.BitMatrix
 
@@ -58,6 +60,24 @@ fun QrPlaceholderView(
                 )
             }
         }
+    }
+}
+
+/**
+ * A QR rendered with the creator's styling: coloured modules, rounded corners
+ * and an optional logo. Uses the same renderer as the PNG export, so what the
+ * preview shows is what gets shared.
+ */
+@Composable
+fun QrStyledView(
+    payload: String,
+    style: QrStyle,
+    modifier: Modifier = Modifier,
+) {
+    val matrix = remember(payload, style.logo) { QrRenderer.encode(payload, style) }
+    Canvas(modifier) {
+        val m = matrix ?: return@Canvas
+        QrRenderer.draw(this, m, style, size.width.toInt())
     }
 }
 

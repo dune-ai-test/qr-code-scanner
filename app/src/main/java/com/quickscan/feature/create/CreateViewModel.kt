@@ -3,6 +3,8 @@ package com.quickscan.feature.create
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.quickscan.R
+import com.quickscan.core.qr.QrLogo
+import com.quickscan.core.qr.QrStyle
 import com.quickscan.data.barcode.PayloadParser
 import com.quickscan.data.repository.ScanRepository
 import com.quickscan.data.repository.ScanSource
@@ -36,6 +38,8 @@ data class CreateUiState(
     val contactName: String = "",
     val contactPhone: String = "",
     val contactEmail: String = "",
+    val style: QrStyle = QrStyle.DEFAULT,
+    val styleOpen: Boolean = false,
     val saving: Boolean = false,
 ) {
     /** What the preview shows; blank until the required fields are filled. */
@@ -121,6 +125,19 @@ class CreateViewModel @Inject constructor(
     fun setContactPhone(value: String) = _state.update { it.copy(contactPhone = value) }
 
     fun setContactEmail(value: String) = _state.update { it.copy(contactEmail = value) }
+
+    fun setStyleOpen(open: Boolean) = _state.update { it.copy(styleOpen = open) }
+
+    fun setForeground(colour: Int) =
+        _state.update { it.copy(style = it.style.copy(foreground = colour)) }
+
+    fun setCornerRadius(radius: Float) =
+        _state.update { it.copy(style = it.style.copy(cornerRadius = radius)) }
+
+    fun setLogo(logo: QrLogo) =
+        _state.update { it.copy(style = it.style.copy(logo = logo)) }
+
+    fun resetStyle() = _state.update { it.copy(style = QrStyle.DEFAULT) }
 
     /** Saves the generated code to history so it can be re-opened later. */
     fun save() {
