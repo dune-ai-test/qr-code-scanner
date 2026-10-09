@@ -42,18 +42,16 @@ class ZxingDecoder {
         val width = image.width
         val height = image.height
 
-        // The plane buffer can be padded relative to width, so copy row by row
-        // and leave the tail zeroed rather than letting the last row shift.
+        // The plane buffer can be padded relative to width, so copy exactly one
+        // stride per row and leave any tail zeroed, rather than letting a short
+        // final row shift every row after it.
         val packed = ByteArray(rowStride * height)
         val buffer = plane.buffer
         buffer.rewind()
         var row = 0
-        while (row < height) {
-            val offset = row * rowStride
-            val chunk = minOf(buffer.remaining(), rowStride)
-            if (chunk <= 0) break
-            buffer.get(packed, offset, chunk)
-            row += chunk / rowStride + 1
+        while (row < height && buffer.remaining() >= rowStride) {
+            buffer.get(packed, row * rowStride, rowStride)
+            row++
         }
 
         val degrees = image.imageInfo.rotationDegrees
