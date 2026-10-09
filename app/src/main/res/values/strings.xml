@@ -31,6 +31,9 @@
     <string name="nav_create">New QR code</string>
 
     <!-- Tab bar -->
+    <string name="pin_scan">Pin this scan</string>
+    <string name="unpin_scan">Remove from favourites</string>
+    <string name="pinned_section">FAVOURITES</string>
     <string name="tab_scan">Scan</string>
     <string name="tab_history">History</string>
     <string name="tab_create">Create</string>

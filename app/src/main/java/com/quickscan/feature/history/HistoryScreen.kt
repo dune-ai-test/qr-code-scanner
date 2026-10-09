@@ -2,6 +2,12 @@ package com.quickscan.feature.history
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.clickable
+import com.quickscan.data.local.ScanEntity
+import com.quickscan.core.ui.component.QSIconTile
+import com.quickscan.core.ui.component.LucideChevronRight
+import com.quickscan.core.ui.component.LucideBookmark
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -41,7 +47,6 @@ import com.quickscan.core.ui.component.LucideUser
 import com.quickscan.core.ui.component.LucideWifi
 import com.quickscan.core.ui.component.QSChip
 import com.quickscan.core.ui.component.QSDivider
-import com.quickscan.core.ui.component.QSListRow
 import com.quickscan.core.ui.component.QSPrimaryButton
 import com.quickscan.core.ui.component.QSNavBar
 import com.quickscan.core.ui.component.QSSectionHeader
@@ -147,6 +152,25 @@ fun HistoryScreen(
                     item { NoMatches() }
                 }
 
+                if (state.pinned.isNotEmpty()) {
+                    item(key = "pinned-header") {
+                        QSSectionHeader(text = stringResource(R.string.pinned_section))
+                    }
+                    item(key = "pinned-card") {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(Radius.xlPlus)
+                                .background(palette.surface),
+                        ) {
+                            state.pinned.forEachIndexed { index, scan ->
+                                if (index > 0) QSDivider(inset = 74.dp)
+                                ScanRow(scan = scan, onOpen = onOpenScan, pinned = true)
+                            }
+                        }
+                    }
+                }
+
                 state.groups.forEach { group ->
                     item(key = "header-${group.header}") {
                         QSSectionHeader(text = group.header)
@@ -159,22 +183,8 @@ fun HistoryScreen(
                                 .background(palette.surface),
                         ) {
                             group.scans.forEachIndexed { index, scan ->
-                                if (index > 0) {
-                                    QSDivider(inset = 74.dp)
-                                }
-                                val type = runCatching { PayloadType.valueOf(scan.type) }
-                                    .getOrDefault(PayloadType.Text)
-                                val (tileBackground, tileInk) = payloadTileColors(type)
-
-                                QSListRow(
-                                    icon = type.icon,
-                                    iconTint = tileInk,
-                                    iconBackground = tileBackground,
-                                    title = scan.title,
-                                    subtitle = "${stringResource(type.labelRes)} · " +
-                                        ScanDates.rowTime(scan.createdAt),
-                                    onClick = { onOpenScan(scan.id) },
-                                )
+                                if (index > 0) QSDivider(inset = 74.dp)
+                                ScanRow(scan = scan, onOpen = onOpenScan, pinned = false)
                             }
                         }
                     }
@@ -189,6 +199,73 @@ fun HistoryScreen(
         onSelect = onTabSelected,
         modifier = Modifier.align(Alignment.BottomCenter),
     )
+    }
+}
+
+/** One history row, shared by the favourites section and the date groups. */
+@Composable
+private fun ScanRow(
+    scan: ScanEntity,
+    onOpen: (Long) -> Unit,
+    pinned: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val palette = QsTheme.palette
+    val type = runCatching { PayloadType.valueOf(scan.type) }
+        .getOrDefault(PayloadType.Text)
+    val (tileBackground, tileInk) = payloadTileColors(type)
+
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .clickable { onOpen(scan.id) }
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        QSIconTile(
+            icon = type.icon,
+            tint = tileInk,
+            background = tileBackground,
+        )
+
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Text(
+                text = scan.title,
+                style = QsTheme.text.row15,
+                color = palette.ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = stringResource(type.labelRes) + " · " +
+                    ScanDates.rowTime(scan.createdAt),
+                style = QsTheme.text.rowSub12,
+                color = palette.inkFaint,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+
+        if (pinned) {
+            Icon(
+                imageVector = LucideBookmark,
+                contentDescription = null,
+                tint = palette.accentTintInk,
+                modifier = Modifier.size(16.dp),
+            )
+        } else {
+            Icon(
+                imageVector = LucideChevronRight,
+                contentDescription = null,
+                tint = palette.inkFaint,
+                modifier = Modifier.size(16.dp),
+            )
+        }
     }
 }
 

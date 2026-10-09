@@ -25,6 +25,7 @@ data class ScanGroup(
 
 data class HistoryUiState(
     val groups: List<ScanGroup> = emptyList(),
+    val pinned: List<ScanEntity> = emptyList(),
     val stats: ScanStats = ScanStats(),
     val filter: ScanFilter = ScanFilter.All,
     val query: String = "",
@@ -62,7 +63,8 @@ class HistoryViewModel @Inject constructor(
         val filtered = searched.filter { activeFilter.matches(it.payloadType()) }
 
         HistoryUiState(
-            groups = group(filtered),
+            groups = group(filtered.filterNot { it.isPinned }),
+            pinned = filtered.filter { it.isPinned },
             stats = stats,
             filter = activeFilter,
             query = activeQuery,

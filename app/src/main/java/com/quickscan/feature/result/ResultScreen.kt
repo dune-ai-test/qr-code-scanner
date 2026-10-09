@@ -42,8 +42,9 @@ import com.quickscan.core.ui.ScanDates
 import com.quickscan.core.ui.headline
 import com.quickscan.core.ui.labelRes
 import com.quickscan.core.ui.component.BannerTone
+import com.quickscan.core.ui.component.LucideBookmark
+import com.quickscan.core.ui.component.LucideBookmarkCheck
 import com.quickscan.core.ui.component.LucideCopy
-import com.quickscan.core.ui.component.LucideEllipsis
 import com.quickscan.core.ui.component.LucideExternalLink
 import com.quickscan.core.ui.component.LucideEye
 import com.quickscan.core.ui.component.LucideEyeOff
@@ -96,9 +97,19 @@ fun ResultScreen(
         QSNavBar(
             title = stringResource(R.string.nav_scan_result),
             onBack = onBack,
-            actionIcon = LucideEllipsis,
-            actionDescription = stringResource(R.string.more_actions),
-            onAction = { payload?.let { context.sharePayload(it) } },
+            actionIcon = if (state.entity?.isPinned == true) {
+                LucideBookmarkCheck
+            } else {
+                LucideBookmark
+            },
+            actionDescription = stringResource(
+                if (state.entity?.isPinned == true) {
+                    R.string.unpin_scan
+                } else {
+                    R.string.pin_scan
+                },
+            ),
+            onAction = viewModel::togglePinned,
         )
 
         if (payload == null || entity == null) {
@@ -145,7 +156,10 @@ fun ResultScreen(
                 )
             }
 
-            ActionRow(payload = payload)
+            ActionRow(
+                payload = payload,
+                onShare = { context.sharePayload(payload) },
+            )
 
             DetailsCard(entity = entity, payload = payload)
 
@@ -421,8 +435,7 @@ private fun CodeHero(raw: String, type: PayloadType, scannedAt: Long) {
 
 /** The action set is chosen by payload type, so each result does what fits. */
 @Composable
-private fun ActionRow(payload: ScannedPayload) {
-    val context = LocalContext.current
+private fun ActionRow(payload: ScannedPayload, onShare: () -> Unit) {
 
     Row(
         modifier = Modifier.fillMaxWidth(),

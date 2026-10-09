@@ -64,6 +64,10 @@ class ResultViewModel @Inject constructor(
         _revealedPassword.value = !_revealedPassword.value
     }
 
+    fun togglePinned() {
+        viewModelScope.launch { scanRepository.togglePinned(scanId) }
+    }
+
     fun delete(onDeleted: () -> Unit) {
         viewModelScope.launch {
             scanRepository.delete(scanId)

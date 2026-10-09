@@ -82,6 +82,14 @@ class ScanRepository(
 
     suspend fun delete(id: Long) = dao.deleteById(id)
 
+    /** Pins or unpins a scan, whichever it currently is not. */
+    suspend fun togglePinned(id: Long): Boolean {
+        val row = dao.findById(id) ?: return false
+        val next = !row.isPinned
+        dao.update(row.copy(isPinned = next))
+        return next
+    }
+
     suspend fun find(id: Long): ScanEntity? = dao.findById(id)
 
     suspend fun parse(entity: ScanEntity): ScannedPayload =
