@@ -5,7 +5,6 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.net.wifi.WifiEnterpriseConfig
 import android.net.wifi.WifiNetworkSuggestion
 import android.os.Build
 import android.provider.Settings
@@ -189,7 +188,7 @@ private fun UrlHero(
                 .clip(Radius.hero)
                 .background(palette.surface)
                 .padding(horizontal = Space.section, vertical = Space.x5xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
+            contentAlignment = Alignment.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -578,9 +577,8 @@ private fun Context.joinWifi(payload: ScannedPayload.Wifi) {
         val builder = WifiNetworkSuggestion.Builder()
             .setSsid(payload.ssid)
             .setIsHiddenSsid(payload.hidden)
-        if (payload.encryption.uppercase() in setOf("NOPASS", "NONE", "")) {
-            builder.setWpa2EnterpriseConfig(WifiEnterpriseConfig.Builder().build())
-        } else {
+        // An open network carries no passphrase; leaving it unset is correct.
+        if (payload.password.isNotEmpty()) {
             builder.setWpa2Passphrase(payload.password)
         }
 

@@ -44,7 +44,7 @@ private fun lucide(name: String, block: PathBuilder.() -> Unit): ImageVector =
         viewportWidth = 24f,
         viewportHeight = 24f,
     ).addPath(
-        pathData = PathBuilder().apply(block),
+        pathData = PathBuilder().apply(block).nodes(),
         fill = null,
         stroke = SolidColor(Color.Black),
         strokeLineWidth = 2f,
@@ -74,9 +74,9 @@ val LucideCheck = lucide("Check") {
 }
 
 val LucideEllipsis = lucide("Ellipsis") {
-    moveTo(12f, 12f); horizontalLineTo(12.01f, 12f)
-    moveTo(19f, 12f); horizontalLineTo(19.01f, 12f)
-    moveTo(5f, 12f); horizontalLineTo(5.01f, 12f)
+    moveTo(12f, 12f); horizontalLineTo(12.01f)
+    moveTo(19f, 12f); horizontalLineTo(19.01f)
+    moveTo(5f, 12f); horizontalLineTo(5.01f)
 }
 
 val LucideCircleX = lucide("CircleX") {
