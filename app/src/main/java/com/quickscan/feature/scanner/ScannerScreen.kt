@@ -86,6 +86,7 @@ import com.quickscan.core.ui.component.QSListRow
 import com.quickscan.core.ui.component.QSPrimaryButton
 import com.quickscan.core.ui.component.QSSecondaryButton
 import com.quickscan.core.ui.component.QSTabBar
+import com.quickscan.core.ui.component.tabBarClearance
 import com.quickscan.core.ui.component.QSTextField
 import com.quickscan.core.ui.component.QrCornerBrackets
 import com.quickscan.core.ui.component.QrPlaceholderView
@@ -197,11 +198,8 @@ fun ScannerScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.bg),
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(palette.bg)) {
+    Column(modifier = Modifier.fillMaxSize()) {
         StatusBarSpacer()
 
         LazyColumn(
@@ -328,10 +326,15 @@ fun ScannerScreen(
                 }
             }
 
-            item { Spacer(Modifier.height(Space.md)) }
+            item { Spacer(Modifier.height(tabBarClearance())) }
         }
+    }
 
-        QSTabBar(selected = TabDestination.Scan, onSelect = onTabSelected)
+    QSTabBar(
+        selected = TabDestination.Scan,
+        onSelect = onTabSelected,
+        modifier = Modifier.align(Alignment.BottomCenter),
+    )
     }
 }
 

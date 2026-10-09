@@ -48,6 +48,7 @@ import com.quickscan.core.ui.component.QSSectionHeader
 import com.quickscan.core.ui.component.QSTextField
 import com.quickscan.core.ui.component.QSStat
 import com.quickscan.core.ui.component.QSTabBar
+import com.quickscan.core.ui.component.tabBarClearance
 import com.quickscan.core.ui.component.StatusBarSpacer
 import com.quickscan.core.ui.component.TabDestination
 import com.quickscan.core.ui.component.ValuePropRow
@@ -70,11 +71,8 @@ fun HistoryScreen(
     val palette = QsTheme.palette
     val text = QsTheme.text
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.bg),
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(palette.bg)) {
+    Column(modifier = Modifier.fillMaxSize()) {
         StatusBarSpacer()
 
         QSNavBar(
@@ -99,7 +97,7 @@ fun HistoryScreen(
                     start = Space.x2xl,
                     end = Space.x2xl,
                     top = Space.x2xl,
-                    bottom = Space.xl,
+                    bottom = tabBarClearance(),
                 ),
                 verticalArrangement = Arrangement.spacedBy(Space.xxl),
             ) {
@@ -184,7 +182,13 @@ fun HistoryScreen(
             }
         }
 
-        QSTabBar(selected = TabDestination.History, onSelect = onTabSelected)
+    }
+
+    QSTabBar(
+        selected = TabDestination.History,
+        onSelect = onTabSelected,
+        modifier = Modifier.align(Alignment.BottomCenter),
+    )
     }
 }
 

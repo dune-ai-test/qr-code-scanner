@@ -60,6 +60,7 @@ import com.quickscan.core.ui.component.QSIconTile
 import com.quickscan.core.ui.component.QSPrimaryButton
 import com.quickscan.core.ui.component.QSSquareAction
 import com.quickscan.core.ui.component.QSTabBar
+import com.quickscan.core.ui.component.tabBarClearance
 import com.quickscan.core.ui.component.QrCodeView
 import com.quickscan.core.ui.component.StatusBarSpacer
 import com.quickscan.core.ui.component.QSNavBar
@@ -88,11 +89,8 @@ fun ResultScreen(
     val entity = state.entity
     val payload = state.payload
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.bg),
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(palette.bg)) {
+    Column(modifier = Modifier.fillMaxSize()) {
         StatusBarSpacer()
 
         QSNavBar(
@@ -164,10 +162,15 @@ fun ResultScreen(
                 textAlign = TextAlign.Center,
             )
 
-            Spacer(Modifier.height(Space.md))
+            Spacer(Modifier.height(tabBarClearance()))
         }
+    }
 
-        QSTabBar(selected = TabDestination.Scan, onSelect = onTabSelected)
+    QSTabBar(
+        selected = TabDestination.Scan,
+        onSelect = onTabSelected,
+        modifier = Modifier.align(Alignment.BottomCenter),
+    )
     }
 }
 

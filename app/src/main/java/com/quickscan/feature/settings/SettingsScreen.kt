@@ -73,6 +73,7 @@ import com.quickscan.core.ui.component.QSSectionHeader
 import com.quickscan.core.ui.component.QSSettingRow
 import com.quickscan.core.ui.component.QSSwitch
 import com.quickscan.core.ui.component.QSTabBar
+import com.quickscan.core.ui.component.tabBarClearance
 import com.quickscan.core.ui.component.QSValueSlot
 import com.quickscan.core.ui.component.StatusBarSpacer
 import com.quickscan.core.ui.component.TabDestination
@@ -111,11 +112,8 @@ fun SettingsScreen(
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.bg),
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(palette.bg)) {
+    Column(modifier = Modifier.fillMaxSize()) {
         StatusBarSpacer()
 
         QSNavBar(
@@ -346,11 +344,15 @@ fun SettingsScreen(
                 )
             }
 
-            Spacer(Modifier.height(Space.xl))
+            Spacer(Modifier.height(tabBarClearance()))
         }
-
-        QSTabBar(selected = TabDestination.Settings, onSelect = onTabSelected)
     }
+
+    QSTabBar(
+        selected = TabDestination.Settings,
+        onSelect = onTabSelected,
+        modifier = Modifier.align(Alignment.BottomCenter),
+    )
 
     if (confirmClear) {
         AlertDialog(
@@ -375,6 +377,7 @@ fun SettingsScreen(
             },
             containerColor = palette.surface,
         )
+    }
     }
 }
 

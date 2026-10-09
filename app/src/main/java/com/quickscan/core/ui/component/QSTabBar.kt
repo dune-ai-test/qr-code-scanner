@@ -38,6 +38,19 @@ import com.quickscan.core.ui.theme.Chrome
 import com.quickscan.core.ui.theme.QsTheme
 import com.quickscan.core.ui.theme.Radius
 
+/**
+ * Vertical space the floating bar takes, including the system navigation
+ * inset. Scrollable content needs this as bottom padding so the last row can
+ * still be scrolled clear of the bar.
+ */
+@Composable
+fun tabBarClearance(): Dp =
+    Chrome.tabBar + TabBarTopGap + TabBarEdgeGap +
+        WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+
+internal val TabBarTopGap = 14.dp
+internal val TabBarEdgeGap = 16.dp
+
 enum class TabDestination(
     val labelRes: Int,
     val icon: ImageVector,
@@ -66,10 +79,11 @@ fun QSTabBar(
         modifier = modifier
             .fillMaxWidth()
             .padding(
-                start = 16.dp,
-                end = 16.dp,
-                top = 14.dp,
-                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 16.dp,
+                start = TabBarEdgeGap,
+                end = TabBarEdgeGap,
+                top = TabBarTopGap,
+                bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() +
+                    TabBarEdgeGap,
             ),
         horizontalArrangement = Arrangement.Center,
     ) {

@@ -52,6 +52,7 @@ import com.quickscan.core.ui.component.QrCodeView
 import com.quickscan.core.ui.component.QrPlaceholderView
 import com.quickscan.core.ui.component.StatusBarSpacer
 import com.quickscan.core.ui.component.QSTabBar
+import com.quickscan.core.ui.component.tabBarClearance
 import com.quickscan.core.ui.component.TabDestination
 import com.quickscan.core.ui.theme.QsTheme
 import com.quickscan.core.ui.theme.Radius
@@ -87,11 +88,8 @@ fun CreateScreen(
         }
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(palette.bg),
-    ) {
+    Box(modifier = Modifier.fillMaxSize().background(palette.bg)) {
+    Column(modifier = Modifier.fillMaxSize()) {
         StatusBarSpacer()
 
         QSNavBar(
@@ -213,10 +211,15 @@ fun CreateScreen(
                 modifier = Modifier.fillMaxWidth(),
             )
 
-            Spacer(Modifier.height(Space.x2xl))
+            Spacer(Modifier.height(tabBarClearance()))
         }
+    }
 
-        QSTabBar(selected = TabDestination.Create, onSelect = onTabSelected)
+    QSTabBar(
+        selected = TabDestination.Create,
+        onSelect = onTabSelected,
+        modifier = Modifier.align(Alignment.BottomCenter),
+    )
     }
 }
 
