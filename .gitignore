@@ -30,3 +30,7 @@ shots/
 # Python bytecode from the tooling scripts.
 __pycache__/
 *.pyc
+
+# Throwaway patch scripts.
+tools/_fix*.py
+tools/_patch*.py
