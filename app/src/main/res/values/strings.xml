@@ -44,6 +44,7 @@
     <string name="scanner_subhead">QR, EAN, Data Matrix and Wi-Fi codes are detected the moment they enter the frame.</string>
     <string name="auto_detect">Auto-detect</string>
     <string name="toggle_torch">Toggle torch</string>
+    <string name="zoom_control">Zoom %1$s</string>
     <string name="toggle_camera">Switch camera</string>
     <string name="shutter">Scan now</string>
     <string name="scan_image">Scan image</string>

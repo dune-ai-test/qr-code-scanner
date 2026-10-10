@@ -164,6 +164,7 @@ fun ScannerScreen(
         }
     }
 
+    val zoom by controller.zoom.collectAsStateWithLifecycle()
     val toneGenerator = remember {
         runCatching {
             ToneGenerator(AudioManager.STREAM_NOTIFICATION, TONE_VOLUME)
@@ -230,6 +231,8 @@ fun ScannerScreen(
                             controller.capture { code -> viewModel.onCaptured(code) }
                         }
                     },
+                    zoom = zoom,
+                    onStepZoom = { controller.stepZoom() },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -358,6 +361,8 @@ private fun Viewfinder(
     onFlip: () -> Unit,
     onGallery: () -> Unit,
     onShutter: () -> Unit,
+    zoom: ZoomState,
+    onStepZoom: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val palette = QsTheme.palette
@@ -372,7 +377,11 @@ private fun Viewfinder(
             .background(palette.scene),
     ) {
         if (hasPermission) {
-            CameraPreview(controller = controller, modifier = Modifier.fillMaxSize())
+            CameraPreview(
+                controller = controller,
+                onZoom = {},
+                modifier = Modifier.fillMaxSize(),
+            )
         }
 
         // The accent glow the mockups place behind the subject.
@@ -424,6 +433,16 @@ private fun Viewfinder(
                     contentDescription = stringResource(R.string.toggle_torch),
                     tint = if (torchOn) palette.accent else Color.White,
                     modifier = Modifier.size(16.dp),
+                )
+            }
+
+            if (zoom.isAvailable) {
+                ZoomPill(
+                    ratio = zoom.current,
+                    onClick = onStepZoom,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(top = 60.dp, end = 20.dp),
                 )
             }
         }
@@ -493,6 +512,34 @@ private fun Reticle(color: Color, modifier: Modifier = Modifier) {
  * read automatically; red means the shutter button is the only way in, which
  * is the case when auto-detect is switched off in Settings.
  */
+/**
+ * Discrete zoom stepper, mirroring the phone-camera idiom. Pinch is the
+ * continuous control; this makes the feature discoverable rather than hidden
+ * in a gesture.
+ */
+@Composable
+private fun ZoomPill(ratio: Float, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val palette = QsTheme.palette
+
+    Box(
+        modifier = modifier
+            .clip(Radius.lg)
+            .background(Color.White.copy(alpha = 0.08f))
+            .clickable(onClick = onClick)
+            .semantics {
+                contentDescription = stringResource(R.string.zoom_control, Zoom.label(ratio))
+            }
+            .padding(horizontal = 13.dp, vertical = 7.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = Zoom.label(ratio),
+            style = QsTheme.text.rowSub12.copy(fontWeight = FontWeight.SemiBold),
+            color = if (ratio > 1.01f) palette.accent else Color.White,
+        )
+    }
+}
+
 @Composable
 private fun AutoDetectPill(enabled: Boolean, modifier: Modifier = Modifier) {
     val palette = QsTheme.palette

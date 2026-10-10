@@ -22,6 +22,10 @@ import com.quickscan.core.qr.DecodeImages
 import com.quickscan.data.barcode.FrameGate
 import com.quickscan.data.barcode.ZxingDecoder
 import java.nio.ByteBuffer
+import androidx.compose.runtime.Immutable
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -44,6 +48,17 @@ import kotlin.coroutines.resumeWithException
  */
 private const val ANALYSIS_WIDTH = 1280
 private const val ANALYSIS_HEIGHT = 720
+
+/** What the viewfinder shows about zoom, and what a pinch starts from. */
+@Immutable
+data class ZoomState(
+    val min: Float = 1f,
+    val max: Float = 1f,
+    val current: Float = 1f,
+) {
+    /** Nothing to zoom into when the lens is fixed focal. */
+    val isAvailable: Boolean get() = max > min * 1.05f
+}
 
 class CameraController(
     private val context: Context,
@@ -75,6 +90,39 @@ class CameraController(
 
     @Volatile
     private var autoDetect: Boolean = true
+
+    /** Zoom the lens supports, published once the camera is bound. */
+    private val _zoom = MutableStateFlow(ZoomState())
+    val zoom: StateFlow<ZoomState> = _zoom.asStateFlow()
+
+    /**
+     * Applies a zoom ratio, clamped to what this lens supports. Returns the
+     * ratio actually applied, which may differ if the request was out of range.
+     */
+    fun setZoomRatio(ratio: Float): Float {
+        val camera = camera
+        val bounds = _zoom.value
+        val clamped = Zoom.clamp(ratio, bounds.min, bounds.max)
+        if (camera == null) {
+            _zoom.value = bounds.copy(current = clamped)
+            return clamped
+        }
+        camera.cameraControl.setZoomRatio(clamped)
+        // The control is async; reflect the intent immediately so the UI and
+        // a pinch do not feel like they are fighting the lens.
+        _zoom.value = bounds.copy(current = clamped)
+        return clamped
+    }
+
+    /**
+     * Steps through the detents a phone camera actually offers, which is what
+     * a tap on the zoom pill should do. Anything the lens cannot reach is
+     * skipped rather than silently clamped.
+     */
+    fun stepZoom(): Float {
+        val bounds = _zoom.value
+        return setZoomRatio(Zoom.nextStep(bounds.current, bounds.min, bounds.max))
+    }
 
     /**
      * With auto-detect off the analysis stream still has to run to keep the
@@ -156,7 +204,15 @@ class CameraController(
                     *useCases,
                 )
             }.onSuccess { camera = it }
-        }.onSuccess { camera = it }
+        }.onSuccess { bound ->
+            camera = bound
+            val zoomState = bound.cameraInfo.zoomState.value
+            _zoom.value = ZoomState(
+                min = zoomState.minZoomRatio,
+                max = zoomState.maxZoomRatio,
+                current = zoomState.zoomRatio,
+            )
+        }
     }
 
     /**
@@ -298,6 +354,8 @@ class CameraController(
         } else {
             CameraSelector.LENS_FACING_BACK
         }
+        // A different lens has its own range and usually starts wide.
+        _zoom.value = ZoomState()
         bindUseCases()
     }
 

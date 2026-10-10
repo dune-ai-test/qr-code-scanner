@@ -26,6 +26,9 @@ Everything the build contains today.
 - **Auto-detect pill** — green while codes are being read, red when the
   shutter is the only way in
 - **Torch** toggle and **front/back camera** flip
+- **Zoom** — pinch anywhere on the viewfinder for continuous zoom, or tap
+  the pill under the torch to step through the stops the lens actually has
+  (0.5x, 1x, 2x and up). The pill is hidden on a fixed-focal lens
 - **Shutter button** — grabs a single frame and decodes it, in either
   auto-detect mode
 - **Scan image** from the photo library, and **Paste link** for a typed or
