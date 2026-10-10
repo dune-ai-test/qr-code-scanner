@@ -193,6 +193,47 @@ Pushing a `v*` tag builds a signed APK and AAB and attaches them to a GitHub rel
 | `KEY_ALIAS` | Key alias |
 | `KEY_PASSWORD` | Key password |
 
+### Local checks
+
+CI is the compiler, but a push-and-wait loop is slow and it only reports what
+broke rather than what to look at. `tools/` holds scripts that run without
+Gradle, for when a check is worth making before a push rather than after one:
+
+| Script | What it checks |
+|--------|----------------|
+| `check.py` | Brace balance, every `R.string.*` exists, no unused imports, no unresolved type-position references |
+| `check_res.py` | XML well-formedness, the entities aapt rejects, numbered format arguments, vector path tokens |
+| `check_batch.py` | The batch sheet grid and the payload rules, by replaying every case in the Kotlin tests |
+| `check_confidence.py` | The finder-pattern state machine, against synthetic scanlines |
+| `check_deeplink.py` | `geo:`, `tel:`, `sms:` and `mailto:` parsing, including the malformed cases |
+| `check_style.py` | The style codec round trip and its fallbacks |
+
+The mirrors exist because CI only runs once per push, and because a check that
+has never been seen to fail is not a check. Each is verified by reintroducing
+the bug it targets and confirming it goes red.
+
+They do not replace the compiler, and they have both directions of failure.
+`check.py` reported a false positive once — its generic-argument pattern had no
+word boundary, so `width < MIN_WIDTH` parsed as a reference to an undefined
+`MIN` and buried two real errors underneath it. In the other direction it
+passed over a duplicate import and an undefined icon name, both of which the
+compiler caught. A green run here says nothing about whether the code builds.
+They are a fast first pass, not a gate.
+
+### Tests
+
+Unit tests live in `app/src/test` and run in CI: 13 files covering the parser,
+the deep links, the decoder's rotation and frame budget, the repository, the
+sweep zoom, the finder-pattern classifier, the batch layout and the style
+codec.
+
+Two instrumentation suites live in `app/src/androidTest` —
+`DecodeInstrumentationTest`, which decodes real photographs end to end, and
+`NavigationInstrumentationTest`, which walks the camera permission flow and
+the tab graph. **CI never runs them**, because there is no emulator in the
+workflow. They are the only automated check that would catch a regression in
+the CameraX wiring, and they need a device or a local emulator.
+
 ### Toolchain
 
 Gradle 8.7, declared in `gradle/wrapper/gradle-wrapper.properties`. The wrapper binary itself is not committed, so run the wrapper task once to materialise `gradlew` locally:

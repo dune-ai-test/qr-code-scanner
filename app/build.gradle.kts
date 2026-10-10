@@ -24,8 +24,8 @@ android {
         // API 27 for display-cutout handling, which an edge-to-edge scanner wants.
         minSdk = 27
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0.0"
+        versionCode = 2
+        versionName = "1.2.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true

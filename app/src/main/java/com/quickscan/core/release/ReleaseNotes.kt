@@ -21,6 +21,45 @@ object ReleaseNotes {
     /** Newest first. */
     val entries: List<Entry> = listOf(
         Entry(
+            version = "1.2.0",
+            date = "October 2026",
+            highlights = listOf(
+                Highlight(
+                    title = "Keep scanning without leaving",
+                    detail = "Continuous mode saves each code, says what it read, " +
+                        "and leaves the camera pointed at the next one. For a table " +
+                        "of codes rather than one at a time.",
+                ),
+                Highlight(
+                    title = "It tells you when to hold still",
+                    detail = "A scan that keeps failing now says \"Hold steady\" " +
+                        "instead of looking identical to pointing at nothing. It " +
+                        "knows the difference from the finder patterns in frame.",
+                ),
+                Highlight(
+                    title = "Links that do things, not just links",
+                    detail = "geo:, tel:, sms: and mailto: codes get their own " +
+                        "result screen and the matching action — open in Maps, " +
+                        "call, send a message, write an email.",
+                ),
+                Highlight(
+                    title = "Many codes on one sheet",
+                    detail = "Paste a list, one per line, and get every code on a " +
+                        "single image you can print, share or pin up.",
+                ),
+                Highlight(
+                    title = "Bulk actions, by type",
+                    detail = "Select several scans and act on all of them, or " +
+                        "switch a type off to delete only the ones you meant.",
+                ),
+                Highlight(
+                    title = "Zoom, and codes that look the same everywhere",
+                    detail = "Pinch the viewfinder to get closer, and a code now " +
+                        "renders the way it was made wherever you open it.",
+                ),
+            ),
+        ),
+        Entry(
             version = "1.1.0",
             date = "October 2026",
             highlights = listOf(
