@@ -5,7 +5,6 @@ import android.os.SystemClock
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.TorchState
-import androidx.camera.core.Zoom
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -227,8 +226,8 @@ class CameraController(
      * 1x-to-1x range reads as "this lens cannot zoom", which is the honest
      * answer for as long as it is true.
      */
-    private fun publishZoomBounds(zoom: Zoom) {
-        val state = zoom.zoomState.value ?: return
+    private fun publishZoomBounds(camera: Camera) {
+        val state = camera.zoomState.value ?: return
         _zoom.value = ZoomState(
             min = state.minZoomRatio,
             max = state.maxZoomRatio,
