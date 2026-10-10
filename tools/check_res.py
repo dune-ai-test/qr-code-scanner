@@ -7,6 +7,7 @@ Gradle stack trace.
 """
 
 import glob
+import os
 import re
 import sys
 import xml.etree.ElementTree as ET
@@ -77,6 +78,23 @@ for path in glob.glob('app/src/main/res/drawable/*.xml'):
         stripped = re.sub(r'[MLHVAZmlhvaz]', '', data)
         if re.search(r'[a-zA-Z]', stripped):
             problems.append("%s: unexpected path token in %r" % (path, data[:80]))
+
+# The resource merger treats every file under res/ as a resource and rejects
+# anything that is not xml, ttf, ttc or otf. An attribution note dropped
+# beside the fonts is the obvious mistake to make, and it only surfaces on a
+# build: res/font/README.md sat here for several commits and the first CI run
+# to see it failed in packageDebugResources.
+ALLOWED_SUFFIXES = (".xml", ".ttf", ".ttc", ".otf", ".png", ".webp",
+                    ".jpg", ".jpeg")
+for path in glob.glob("app/src/main/res/**/*", recursive=True):
+    if os.path.isdir(path):
+        continue
+    name = os.path.basename(path)
+    if name.startswith("."):
+        continue
+    if not name.lower().endswith(ALLOWED_SUFFIXES):
+        problems.append("%s: not a resource type; res/ accepts only %s"
+                        % (path, ", ".join(ALLOWED_SUFFIXES)))
 
 if problems:
     print("\n".join(problems))

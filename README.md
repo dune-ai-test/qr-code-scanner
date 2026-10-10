@@ -450,8 +450,8 @@ running it, after tracing by eye had missed both.
 ## Typeface
 
 **Geist** (Vercel, SIL Open Font License 1.1). The four weights the
-type scale uses are vendored under `app/src/main/res/font/`; see the
-README there for attribution.
+type scale uses are vendored under `app/src/main/res/font/`. Third-party
+attribution for Geist, Lucide and ZXing is in [`docs/ATTRIBUTION.md`](docs/ATTRIBUTION.md).
 
 ## Privacy
 
