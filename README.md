@@ -26,7 +26,7 @@ The result screen routes by payload type, so text, contact and product codes get
 com.quickscan
 ├── core/qr          QrPlaceholder (seeded 25x25 generator), QrEncoder (ZXing)
 ├── core/ui          theme tokens, shared components, payload presentation
-├── data/barcode     ZxingDecoder, PayloadParser
+├── data/barcode     ZxingDecoder, LumaRotation, FrameGate, PayloadParser
 ├── data/local       Room entities/DAO, DataStore preferences
 ├── data/repository  ScanRepository, SettingsRepository
 ├── feature/*        onboarding, scanner, result, history, create, settings
@@ -44,7 +44,7 @@ Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore 
 
 The GitHub Actions workflow in `.github/workflows/android.yml` is the build. Every push to `main` and every pull request runs:
 
-- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`)
+- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`)
 - `lintDebug`
 - `assembleDebug`
 
@@ -79,10 +79,6 @@ keyAlias=…
 keyPassword=…
 ```
 
-## Typeface
-
-The design calls for **Geist** (Vercel, SIL Open Font License). `AppTypeface.kt` currently maps the family to `FontFamily.Default` so the build stays green with no vendored binaries. To switch, drop `Geist-Regular.ttf`, `Geist-Medium.ttf`, `Geist-SemiBold.ttf` and `Geist-Bold.ttf` into `app/src/main/res/font/` and replace the body of `AppTypeface.family` with the `FontFamily(...)` call shown in that file. The type scale — sizes, leading and tracking — is already correct and is not affected.
-
 ## Icons
 
 Icons come from [Lucide](https://lucide.dev) v1.54.0 (ISC). The published SVGs
@@ -98,6 +94,43 @@ python tools/lucide_to_kt.py tools/lucide     app/src/main/java/com/quickscan/co
 Keeping the icons generated rather than hand-written matters: an approximate
 path looks plausible in code review and renders as an unrecognisable shape on
 the device.
+
+## Scanning
+
+Decoding is budgeted, because analysing every frame of a 720p stream is
+about 0.9 megapixels of luminance work thirty times a second for a
+viewfinder that has usually not moved.
+
+- `FrameGate` rate-limits decoding to ten passes a second and skips any
+  frame whose sparse signature is unchanged, while still letting a
+  still scene through once every 750ms so a slow change is not missed.
+- When the viewfinder keeps changing but the live stream reads nothing,
+  one **full-resolution still** is captured and decoded instead, which
+  is what finds a small or distant code. That is budgeted too: at most
+  one every 2.5 seconds, and only after three scene changes.
+- Photos and captures are sampled to a 1600px long edge before they
+  reach ZXing. A 12MP photo is a 51MB int array; no code needs that
+  much resolution.
+- The rotation and row packing live in `LumaRotation`, separate from
+  the decoder, because that is where a camera bug once left half the
+  frame black and nothing could ever decode.
+
+## Typeface
+
+**Geist** (Vercel, SIL Open Font License 1.1). The four weights the
+type scale uses are vendored under `app/src/main/res/font/`; see the
+README there for attribution.
+
+## Privacy
+
+Copies pass through a single `ClipboardGuard`. A Wi-Fi password, or a
+decoded result read from a code, is cleared after a minute. Everything
+else persists, because a URL you deliberately copied should still be
+there when you paste it. The clear only fires if the clipboard still
+holds what we put there, so a later copy is never wiped.
+
+Looping animations read the system animation scale and hold still when
+animations are switched off.
 
 ## Procedural QR artwork
 
