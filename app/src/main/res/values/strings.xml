@@ -43,6 +43,9 @@
     <string name="scanner_headline">Point at a code</string>
     <string name="scanner_subhead">QR, EAN, Data Matrix and Wi-Fi codes are detected the moment they enter the frame.</string>
     <string name="auto_detect">Auto-detect</string>
+    <string name="continuous_mode">Continuous</string>
+    <string name="scanned_saved">%1$s saved</string>
+    <string name="scanned_saved_named">%1$s · %2$s</string>
     <string name="toggle_torch">Toggle torch</string>
     <string name="zoom_control">Zoom %1$s</string>
     <string name="toggle_camera">Switch camera</string>
@@ -186,6 +189,8 @@
     <string name="settings_section_permissions">PERMISSIONS</string>
     <string name="settings_section_about">ABOUT</string>
     <string name="setting_auto_detect">Auto-detect codes</string>
+    <string name="setting_continuous_mode">Continuous scanning</string>
+    <string name="setting_continuous_mode_body">Stay in the viewfinder and keep scanning, for reading several codes in a row.</string>
     <string name="setting_default_camera">Default camera</string>
     <string name="setting_camera_rear">Rear</string>
     <string name="setting_camera_front">Front</string>

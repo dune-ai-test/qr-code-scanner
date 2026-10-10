@@ -185,6 +185,7 @@ fun ScannerScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is ScannerEvent.OpenResult -> onOpenResult(event.scanId)
+                is ScannerEvent.SavedInPlace -> context.showSavedToast(event)
                 is ScannerEvent.CopyToClipboard -> context.copyToClipboard(event.text)
                 is ScannerEvent.Message -> context.showToast(event.text)
                 is ScannerEvent.SignalScanFeedback -> {
@@ -214,6 +215,7 @@ fun ScannerScreen(
                     controller = controller,
                     torchOn = state.torchOn,
                     autoDetect = state.autoDetect,
+                    continuousMode = state.continuousMode,
                     onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                     onOpenSettings = context::openAppSettings,
                     onTorch = {
@@ -355,6 +357,7 @@ private fun Viewfinder(
     controller: CameraController,
     torchOn: Boolean,
     autoDetect: Boolean,
+    continuousMode: Boolean,
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit,
     onTorch: () -> Unit,
@@ -416,6 +419,16 @@ private fun Viewfinder(
                 .align(Alignment.TopStart)
                 .padding(20.dp),
         )
+
+        // Without this, not navigating looks like the app hanging. It sits
+        // under the auto-detect pill because both describe the current mode.
+        if (continuousMode && hasPermission) {
+            ContinuousPill(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(start = 20.dp, top = 58.dp),
+            )
+        }
 
         if (hasPermission) {
             Box(
@@ -562,6 +575,36 @@ private fun AutoDetectPill(enabled: Boolean, modifier: Modifier = Modifier) {
             text = stringResource(R.string.auto_detect),
             style = QsTheme.text.rowSub12.copy(fontWeight = FontWeight.SemiBold),
             color = if (enabled) Color.White else Color.White.copy(alpha = 0.6f),
+        )
+    }
+}
+
+/**
+ * Marks continuous mode while it is on. The accent fill sets it apart from the
+ * translucent auto-detect pill, which reports a capability rather than a
+ * choice the user made.
+ */
+@Composable
+private fun ContinuousPill(modifier: Modifier = Modifier) {
+    val palette = QsTheme.palette
+    Row(
+        modifier = modifier
+            .clip(Radius.pill)
+            .background(palette.accent)
+            .padding(horizontal = 13.dp, vertical = 7.dp),
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = LucideRepeat,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(13.dp),
+        )
+        Text(
+            text = stringResource(R.string.continuous_mode),
+            style = QsTheme.text.rowSub12.copy(fontWeight = FontWeight.SemiBold),
+            color = Color.White,
         )
     }
 }
@@ -751,6 +794,21 @@ private fun Context.hasCameraPermission(): Boolean =
 
 private fun Context.copyToClipboard(text: String) {
     ClipboardGuard.copy(this, getString(R.string.app_name), text)
+}
+
+/**
+ * Confirms a continuous-mode save without leaving the viewfinder. Named rather
+ * than a length, because at a table of codes "which one was that" is the whole
+ * question the toast exists to answer.
+ */
+private fun Context.showSavedToast(event: ScannerEvent.SavedInPlace) {
+    val type = getString(event.type.labelRes)
+    val text = if (event.label.isBlank()) {
+        getString(R.string.scanned_saved, type)
+    } else {
+        getString(R.string.scanned_saved_named, type, event.label)
+    }
+    Toast.makeText(this, text, Toast.LENGTH_SHORT).show()
 }
 
 private fun Context.showToast(message: ScannerMessage) {

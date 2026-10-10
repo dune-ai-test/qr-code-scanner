@@ -60,6 +60,7 @@ import com.quickscan.core.ui.component.LucideHardDrive
 import com.quickscan.core.ui.component.LucideImage
 import com.quickscan.core.ui.component.LucideInfo
 import com.quickscan.core.ui.component.LucideMoon
+import com.quickscan.core.ui.component.LucideRepeat
 import com.quickscan.core.ui.component.LucideScanLine
 import com.quickscan.core.ui.component.LucideSparkles
 import com.quickscan.core.ui.component.LucideSmartphone
@@ -143,6 +144,16 @@ fun SettingsScreen(
                     background = palette.surface,
                     trailing = {
                         QSSwitch(state.autoDetect, viewModel::setAutoDetect)
+                    },
+                )
+                GroupDivider()
+                QSSettingRow(
+                    icon = LucideRepeat,
+                    title = stringResource(R.string.setting_continuous_mode),
+                    subtitle = stringResource(R.string.setting_continuous_mode_body),
+                    background = palette.surface,
+                    trailing = {
+                        QSSwitch(state.continuousMode, viewModel::setContinuousMode)
                     },
                 )
                 GroupDivider()

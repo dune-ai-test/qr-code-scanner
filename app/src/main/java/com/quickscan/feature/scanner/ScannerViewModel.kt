@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.quickscan.data.barcode.DecodedCode
 import com.quickscan.data.barcode.PayloadParser
+import com.quickscan.data.barcode.PayloadType
 import com.quickscan.data.barcode.ZxingDecoder
+import com.quickscan.core.ui.toastLabel
 import com.quickscan.data.local.ScanEntity
 import com.quickscan.data.repository.ScanRepository
 import com.quickscan.data.repository.ScanSource
@@ -27,6 +29,7 @@ data class ScannerUiState(
     val torchOn: Boolean = false,
     val usingFrontCamera: Boolean = false,
     val autoDetect: Boolean = true,
+    val continuousMode: Boolean = false,
     val copyAutomatically: Boolean = false,
     val scanSound: Boolean = true,
     val vibrate: Boolean = true,
@@ -40,6 +43,10 @@ data class ScannerUiState(
 
 sealed interface ScannerEvent {
     data class OpenResult(val scanId: Long) : ScannerEvent
+
+    /** Continuous mode: recorded, but the scanner stays where it is. */
+    data class SavedInPlace(val type: PayloadType, val label: String) : ScannerEvent
+
     data class Message(val text: ScannerMessage) : ScannerEvent
     data class CopyToClipboard(val text: String) : ScannerEvent
     data class SignalScanFeedback(val vibrate: Boolean, val playSound: Boolean) : ScannerEvent
@@ -69,6 +76,9 @@ class ScannerViewModel @Inject constructor(
     /** Shared with [CameraController] so the camera and the gallery use one decoder. */
     val decoder: ZxingDecoder = decoder
 
+    /** Only consulted in continuous mode; see [RepeatGate]. */
+    private val repeatGate = RepeatGate()
+
     init {
         viewModelScope.launch {
             combine(
@@ -79,6 +89,7 @@ class ScannerViewModel @Inject constructor(
                     it.copy(
                         usingFrontCamera = prefs.preferFrontCamera,
                         autoDetect = prefs.autoDetect,
+                        continuousMode = prefs.continuousMode,
                         copyAutomatically = prefs.copyAutomatically,
                         scanSound = prefs.scanSound,
                         vibrate = prefs.vibrateOnScan,
@@ -91,7 +102,14 @@ class ScannerViewModel @Inject constructor(
 
     /** Called from the camera analyzer for every decoded frame. */
     fun onCodeDetected(code: DecodedCode) {
-        if (!_state.value.autoDetect) return
+        val snapshot = _state.value
+        if (!snapshot.autoDetect) return
+        // Continuous mode leaves the camera pointed at whatever it just read,
+        // so the analyser decodes the same code again every time the frame
+        // gate lets a still scene through. Deliberate actions — the shutter,
+        // the gallery, a pasted link — do not come through here and are
+        // never suppressed.
+        if (snapshot.continuousMode && !repeatGate.shouldAccept(code.text)) return
         accept(code, ScanSource.Camera)
     }
 
@@ -170,6 +188,11 @@ class ScannerViewModel @Inject constructor(
             return
         }
 
+        // Decided here rather than read from the snapshot after the write, so a
+        // preference change mid-write cannot swap the exit out from under an
+        // accepted scan.
+        val continuous = _state.value.continuousMode
+
         _state.update { it.copy(busy = true) }
         viewModelScope.launch {
             val id = scanRepository.record(payload, source)
@@ -185,7 +208,13 @@ class ScannerViewModel @Inject constructor(
             if (snapshot.copyAutomatically) {
                 _events.send(ScannerEvent.CopyToClipboard(payload.raw))
             }
-            _events.send(ScannerEvent.OpenResult(id))
+            if (continuous) {
+                _events.send(
+                    ScannerEvent.SavedInPlace(payload.type, payload.toastLabel),
+                )
+            } else {
+                _events.send(ScannerEvent.OpenResult(id))
+            }
         }
     }
 

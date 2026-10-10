@@ -25,6 +25,14 @@ class SettingsStore(private val context: Context) {
     val autoDetect: Flow<Boolean> =
         context.dataStore.data.map { it[KEY_AUTO_DETECT] ?: true }
 
+    /**
+     * Whether a detection stays in the viewfinder instead of opening the
+     * result. Off by default, so the one-code-at-a-time behaviour nobody has
+     * asked to change stays the default.
+     */
+    val continuousMode: Flow<Boolean> =
+        context.dataStore.data.map { it[KEY_CONTINUOUS_MODE] ?: false }
+
     val copyAutomatically: Flow<Boolean> =
         context.dataStore.data.map { it[KEY_COPY_AUTOMATICALLY] ?: false }
 
@@ -62,6 +70,8 @@ class SettingsStore(private val context: Context) {
 
     suspend fun setAutoDetect(value: Boolean) = put(KEY_AUTO_DETECT, value)
 
+    suspend fun setContinuousMode(value: Boolean) = put(KEY_CONTINUOUS_MODE, value)
+
     suspend fun setCopyAutomatically(value: Boolean) = put(KEY_COPY_AUTOMATICALLY, value)
 
     suspend fun setScanSound(value: Boolean) = put(KEY_SCAN_SOUND, value)
@@ -90,6 +100,7 @@ class SettingsStore(private val context: Context) {
         private val KEY_ONBOARDING = booleanPreferencesKey("onboarding_complete")
         private val KEY_NAME = stringPreferencesKey("display_name")
         private val KEY_AUTO_DETECT = booleanPreferencesKey("auto_detect")
+        private val KEY_CONTINUOUS_MODE = booleanPreferencesKey("continuous_mode")
         private val KEY_COPY_AUTOMATICALLY = booleanPreferencesKey("copy_automatically")
         private val KEY_SCAN_SOUND = booleanPreferencesKey("scan_sound")
         private val KEY_VIBRATE = booleanPreferencesKey("vibrate_on_scan")

@@ -33,6 +33,13 @@ Everything the build contains today.
   auto-detect mode
 - **Scan image** from the photo library, and **Paste link** for a typed or
   shared address
+- **Continuous mode** — off by default. When on, a detection is saved,
+  announced in a toast naming what was read, and the camera keeps scanning
+  rather than opening the result. For a table of codes rather than one at a
+  time. A pill under Auto-detect says so, because not navigating would
+  otherwise look like the app hanging. See
+  [The repeat gate](#the-repeat-gate) for why holding one code still in frame
+  does not announce it twice.
 - **Formats**: QR, Data Matrix, Aztec, PDF417, EAN-13, EAN-8, UPC-A, UPC-E,
   Code 128, Code 39, Code 93, ITF, Codabar
 - **Centre-crop decoding** with a full-frame fallback, plus a retry on
@@ -89,8 +96,8 @@ in scope is already pinned the same button becomes an unpin.
 ### Settings
 
 - **Profile** card
-- **Scanner** — auto-detect, default camera, copy automatically, scan
-  sound, vibrate
+- **Scanner** — auto-detect, continuous scanning, default camera, copy
+  automatically, scan sound, vibrate
 - **Appearance** — dark mode, four accent colours, larger text
 - **History & storage** — a retention picker offering 7 days, 30 days,
   90 days, 1 year and **Always**; storage used; clear history
@@ -159,7 +166,7 @@ Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore 
 
 The GitHub Actions workflow in `.github/workflows/android.yml` is the build. Every push to `main` and every pull request runs:
 
-- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`, `Zoom`, `SelectionScope`)
+- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`, `Zoom`, `SelectionScope`, `RepeatGate`)
 - `lintDebug`
 - `assembleDebug`
 
@@ -230,6 +237,34 @@ viewfinder that has usually not moved.
   the decoder, because that is where a camera bug once left half the
   frame black and nothing could ever decode.
 
+### The repeat gate
+
+Continuous mode leaves the camera pointed at whatever it just read, so
+the analyser decodes that same code again every time the frame gate lets
+a still scene through — about every 750ms. Without a guard, holding a
+code in frame would announce it several times a second.
+
+`RepeatGate` answers one question: is this the code I just read, still
+sitting there? A payload is refused while it is the same one as the last
+accepted, and becomes eligible again the moment a *different* payload is
+read. So each code announces once per approach: holding it still says
+nothing more, and returning to it after dealing with the next one says it
+again.
+
+Two details follow from that shape rather than from the constant. Only the
+last payload is kept, so the gate cannot grow during a long session and
+does not accumulate a list of what everyone at a table scanned. And the
+window is a floor rather than a delay — about 2s, comfortably above the
+750ms gap between decodes of a still scene — so it only ever suppresses a
+genuine repeat.
+
+An earlier version keyed on a map of everything seen with a five-second
+window. It passed the same tests it was written against and was still
+wrong: five seconds outlives the repository's three-second dedupe window,
+so holding one code for six seconds wrote a second history row for it.
+That is the kind of bug that only shows up in a feature nobody has used
+yet, which is why the window is now shorter than the dedupe it sits on.
+
 ## Typeface
 
 **Geist** (Vercel, SIL Open Font License 1.1). The four weights the
@@ -260,7 +295,8 @@ Worth knowing before trusting any of this on a device.
 - **CI is not the same as a device.** Everything compiles, lints and passes
   unit tests, but the most recent features — PNG export, the style panel,
   What's new, favourites, bulk actions, per-type bulk actions, launcher
-  shortcuts, Geist, camera zoom, the clipboard policy and the scanning
+  shortcuts, Geist, camera zoom, continuous mode, the clipboard policy and
+  the scanning
   budget — have not been seen on a screen, because no phone was connected
   while they were written.
 - **Live auto-detection is unconfirmed** on real hardware. The shutter

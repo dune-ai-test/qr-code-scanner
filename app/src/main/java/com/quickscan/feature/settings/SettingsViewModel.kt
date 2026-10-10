@@ -22,6 +22,7 @@ import javax.inject.Inject
 data class SettingsUiState(
     val displayName: String = "",
     val autoDetect: Boolean = true,
+    val continuousMode: Boolean = false,
     val preferFrontCamera: Boolean = false,
     val copyAutomatically: Boolean = false,
     val scanSound: Boolean = true,
@@ -36,10 +37,16 @@ data class SettingsUiState(
     }
 }
 
-private data class ScannerBehaviour(
+/** What the scanner does with a detection. */
+private data class ScanBehaviour(
     val autoDetect: Boolean,
+    val continuousMode: Boolean,
     val preferFrontCamera: Boolean,
     val copyAutomatically: Boolean,
+)
+
+/** What the scanner says when it does. */
+private data class FeedbackBehaviour(
     val scanSound: Boolean,
     val vibrate: Boolean,
     val retentionDays: Int,
@@ -56,27 +63,30 @@ class SettingsViewModel @Inject constructor(
     private val unreadRelease: Flow<Boolean> = settingsRepository.lastSeenRelease
         .map { ReleaseNotes.isUnseen(it) }
 
-    private val behaviour: Flow<ScannerBehaviour> = combine(
+    // combine() has typed overloads only up to five flows, so the seven
+    // scanner preferences fold into two groups before being merged.
+    private val behaviour: Flow<Pair<ScanBehaviour, FeedbackBehaviour>> = combine(
         combine(
             settingsRepository.autoDetect,
+            settingsRepository.continuousMode,
             settingsRepository.preferFrontCamera,
             settingsRepository.copyAutomatically,
-        ) { autoDetect, front, copy -> Triple(autoDetect, front, copy) },
+        ) { autoDetect, continuous, front, copy ->
+            ScanBehaviour(
+                autoDetect = autoDetect,
+                continuousMode = continuous,
+                preferFrontCamera = front,
+                copyAutomatically = copy,
+            )
+        },
         combine(
             settingsRepository.scanSound,
             settingsRepository.vibrateOnScan,
             settingsRepository.retentionDays,
-        ) { sound, vibrate, retention -> Triple(sound, vibrate, retention) },
-    ) { behaviourPrefs, feedbackPrefs ->
-        ScannerBehaviour(
-            autoDetect = behaviourPrefs.first,
-            preferFrontCamera = behaviourPrefs.second,
-            copyAutomatically = behaviourPrefs.third,
-            scanSound = feedbackPrefs.first,
-            vibrate = feedbackPrefs.second,
-            retentionDays = feedbackPrefs.third,
-        )
-    }
+        ) { sound, vibrate, retention ->
+            FeedbackBehaviour(sound, vibrate, retention)
+        },
+    ) { scan, feedback -> scan to feedback }
 
     val state: StateFlow<SettingsUiState> = combine(
         settingsRepository.displayName,
@@ -84,16 +94,18 @@ class SettingsViewModel @Inject constructor(
         settingsRepository.themeState,
         storageUsage,
         unreadRelease,
-    ) { name, scanner, theme, storage, unread ->
+    ) { name, behaviours, theme, storage, unread ->
+        val (scan, feedback) = behaviours
         SettingsUiState(
             displayName = name,
-            autoDetect = scanner.autoDetect,
-            preferFrontCamera = scanner.preferFrontCamera,
-            copyAutomatically = scanner.copyAutomatically,
-            scanSound = scanner.scanSound,
-            vibrate = scanner.vibrate,
+            autoDetect = scan.autoDetect,
+            continuousMode = scan.continuousMode,
+            preferFrontCamera = scan.preferFrontCamera,
+            copyAutomatically = scan.copyAutomatically,
+            scanSound = feedback.scanSound,
+            vibrate = feedback.vibrate,
             theme = theme,
-            retentionDays = scanner.retentionDays,
+            retentionDays = feedback.retentionDays,
             storage = storage,
             hasUnreadRelease = unread,
         )
@@ -109,6 +121,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setAutoDetect(value: Boolean) = viewModelScope.launch {
         settingsRepository.setAutoDetect(value)
+    }
+
+    fun setContinuousMode(value: Boolean) = viewModelScope.launch {
+        settingsRepository.setContinuousMode(value)
     }
 
     fun setPreferFrontCamera(value: Boolean) = viewModelScope.launch {

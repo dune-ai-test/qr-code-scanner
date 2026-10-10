@@ -15,6 +15,8 @@ data class ThemeState(
 /** Everything the scanner needs to behave the way the user configured. */
 data class ScannerPreferences(
     val autoDetect: Boolean = true,
+    /** Stay in the viewfinder after a detection instead of opening the result. */
+    val continuousMode: Boolean = false,
     val copyAutomatically: Boolean = false,
     val scanSound: Boolean = true,
     val vibrateOnScan: Boolean = true,
@@ -28,6 +30,7 @@ class SettingsRepository(private val store: SettingsStore) {
     val displayName: Flow<String> = store.displayName
 
     val autoDetect: Flow<Boolean> = store.autoDetect
+    val continuousMode: Flow<Boolean> = store.continuousMode
     val copyAutomatically: Flow<Boolean> = store.copyAutomatically
     val scanSound: Flow<Boolean> = store.scanSound
     val vibrateOnScan: Flow<Boolean> = store.vibrateOnScan
@@ -39,19 +42,31 @@ class SettingsRepository(private val store: SettingsStore) {
 
     val lastSeenRelease: Flow<String?> = store.lastSeenRelease
 
+    // combine() has typed overloads only up to five flows, so this folds into
+    // two groups first rather than spilling into the untyped vararg overload.
     val scannerPreferences: Flow<ScannerPreferences> = combine(
-        store.autoDetect,
-        store.copyAutomatically,
-        store.scanSound,
-        store.vibrateOnScan,
-        combine(store.preferFrontCamera, store.retentionDays) { front, days ->
-            front to days
+        combine(
+            store.autoDetect,
+            store.continuousMode,
+            store.copyAutomatically,
+            store.scanSound,
+        ) { autoDetect, continuous, copy, sound ->
+            ScannerPreferences(
+                autoDetect = autoDetect,
+                continuousMode = continuous,
+                copyAutomatically = copy,
+                scanSound = sound,
+            )
         },
-    ) { autoDetect, copy, sound, vibrate, (front, days) ->
-        ScannerPreferences(
-            autoDetect = autoDetect,
-            copyAutomatically = copy,
-            scanSound = sound,
+        combine(
+            store.vibrateOnScan,
+            store.preferFrontCamera,
+            store.retentionDays,
+        ) { vibrate, front, days ->
+            Triple(vibrate, front, days)
+        },
+    ) { base, (vibrate, front, days) ->
+        base.copy(
             vibrateOnScan = vibrate,
             preferFrontCamera = front,
             retentionDays = days,
@@ -75,6 +90,8 @@ class SettingsRepository(private val store: SettingsStore) {
     suspend fun setDisplayName(value: String) = store.setDisplayName(value)
 
     suspend fun setAutoDetect(value: Boolean) = store.setAutoDetect(value)
+
+    suspend fun setContinuousMode(value: Boolean) = store.setContinuousMode(value)
 
     suspend fun setCopyAutomatically(value: Boolean) = store.setCopyAutomatically(value)
 

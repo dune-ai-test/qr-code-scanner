@@ -61,6 +61,20 @@ val ScannedPayload.headline: String
     }
 
 /**
+ * A compact identity for a toast. Unlike [headline] this has to survive a
+ * toast's width, so a link is its host rather than the whole URL and plain
+ * text is a length rather than a wall of characters.
+ */
+val ScannedPayload.toastLabel: String
+    get() = when (this) {
+        is ScannedPayload.Url -> host
+        is ScannedPayload.Wifi -> ssid
+        is ScannedPayload.Contact -> name.ifBlank { email ?: phone ?: "" }
+        is ScannedPayload.Product -> value
+        is ScannedPayload.Text -> "${raw.length} characters"
+    }
+
+/**
  * Date formatting for History. Grouping headers are all-caps; row subtitles
  * carry the clock time.
  */
