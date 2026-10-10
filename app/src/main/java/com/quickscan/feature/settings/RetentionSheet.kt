@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBars
@@ -58,6 +59,12 @@ fun RetentionSheet(
             .background(palette.surfaceElevated)
             .padding(horizontal = Space.xl, vertical = Space.xxl)
             .padding(
+                // The sheet is anchored to the bottom and its height depends
+                // on the options, so on a short screen it reaches the top and
+                // its own title disappears under the status bar. The bottom
+                // inset was here; the top one was not.
+                top = WindowInsets.statusBars.asPaddingValues()
+                    .calculateTopPadding() + Space.xxl,
                 bottom = WindowInsets.navigationBars.asPaddingValues()
                     .calculateBottomPadding() + Space.xxl,
             ),

@@ -512,18 +512,22 @@ Everywhere real data appears, `QrCodeView` renders an actual ZXing `BitMatrix` t
 
 Worth knowing before trusting any of this on a device.
 
-- **CI is not the same as a device.** Everything compiles, lints and passes
-  unit tests, but the most recent features — PNG export, the style panel,
-  What's new, favourites, bulk actions, per-type bulk actions, launcher
-  shortcuts, Geist, camera zoom, continuous mode, deep links, the clipboard
-  policy, decode confidence, batch generate, the unified renderer and the scanning
-  budget — have not been seen on a screen, because no phone was connected
-  while they were written.
-- **Live auto-detection is unconfirmed** on real hardware. The shutter
-  path, which uses the same decoder, is proven: it reads a photographed
-  QR end to end. The live path additionally goes through `FrameGate`,
-  which makes it stricter rather than looser, so it is the first thing
-  to check on a device.
+- **Walked on a device since.** Every screen has been opened on a Samsung
+  SM-J610F (Android 10) and the ones with a defined end state exercised:
+  onboarding, the scanner with its camera live, create and export, batch,
+  history including selection, pinning and deletion, settings, retention,
+  dark mode and What's new. Six defects that only a screenshot or a
+  logcat could find were fixed that way, including one that killed the
+  process on the first analysed frame.
+- **Reading a real code off a printed page is still unproven.** The
+  camera opens, analyses and survives, but nothing was ever placed in
+  front of it. Auto-detect, the full-resolution escalation and the
+  decode-confidence hint have all been exercised only against a blank
+  wall, which is precisely the case where the hint stays silent.
+- **A generated sheet has never been scanned back.** Batch generate was
+  built and its layout checked as arithmetic; whether sixty codes on
+  one printed page actually read is a question only paper and a
+  scanner can answer.
 - **The signed release job has never run.** It needs the four keystore
   secrets above and a `v*` tag; it is the only path in CI with no
   execution history.
