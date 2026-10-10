@@ -1,7 +1,5 @@
 package com.quickscan.feature.result
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -42,6 +40,7 @@ import com.quickscan.core.ui.ScanDates
 import com.quickscan.core.ui.headline
 import com.quickscan.core.ui.labelRes
 import com.quickscan.core.ui.component.LucideBookmark
+import com.quickscan.core.util.ClipboardGuard
 import com.quickscan.core.ui.component.LucideBookmarkCheck
 import com.quickscan.core.ui.component.LucideBookmarkCheck
 import com.quickscan.core.ui.component.LucideCopy
@@ -422,7 +421,7 @@ private fun ActionRow(payload: ScannedPayload, onShare: () -> Unit) {
         QSSquareAction(
             icon = LucideCopy,
             contentDescription = stringResource(R.string.copy_action),
-            onClick = { context.copyToClipboard(payload.raw) },
+            onClick = { context.copyToClipboard(payload.raw, sensitive = true) },
         )
 
         when (payload) {
@@ -450,7 +449,7 @@ private fun ActionRow(payload: ScannedPayload, onShare: () -> Unit) {
                 QSSquareAction(
                     icon = LucideCopy,
                     contentDescription = stringResource(R.string.copy_action),
-                    onClick = { context.copyToClipboard(payload.password) },
+                    onClick = { context.copyToClipboard(payload.password, sensitive = true) },
                 )
             }
 
@@ -538,9 +537,8 @@ private fun DetailsCard(
     }
 }
 
-private fun Context.copyToClipboard(text: String) {
-    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("QuickScan", text))
+private fun Context.copyToClipboard(text: String, sensitive: Boolean = false) {
+    ClipboardGuard.copy(this, getString(R.string.app_name), text, sensitive)
     Toast.makeText(this, R.string.copied, Toast.LENGTH_SHORT).show()
 }
 

@@ -1,8 +1,6 @@
 package com.quickscan.feature.scanner
 
 import android.Manifest
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -77,6 +75,7 @@ import com.quickscan.core.ui.labelRes
 import com.quickscan.core.ui.payloadTileColors
 import com.quickscan.core.qr.DecodeImages
 import com.quickscan.core.ui.component.LucideClipboardPaste
+import com.quickscan.core.util.ClipboardGuard
 import com.quickscan.core.ui.component.LucideImage
 import com.quickscan.core.ui.component.LucideRepeat
 import com.quickscan.core.ui.component.LucideScanLine
@@ -93,6 +92,7 @@ import com.quickscan.core.ui.component.QrPlaceholderView
 import com.quickscan.core.ui.component.StatusBarSpacer
 import com.quickscan.core.ui.component.TabDestination
 import com.quickscan.core.ui.theme.QsTheme
+import com.quickscan.core.ui.theme.rememberReducedMotion
 import com.quickscan.core.ui.theme.Radius
 import com.quickscan.core.ui.theme.Space
 import com.quickscan.data.barcode.PayloadType
@@ -451,6 +451,9 @@ private fun Viewfinder(
 /** Corner brackets plus the accent hairline that sweeps between them. */
 @Composable
 private fun Reticle(color: Color, modifier: Modifier = Modifier) {
+    // With animations switched off in system settings the line sits still
+    // rather than sweeping forever.
+    val reducedMotion = rememberReducedMotion()
     val transition = rememberInfiniteTransition(label = "sweep")
     val progress by transition.animateFloat(
         initialValue = 0f,
@@ -461,6 +464,7 @@ private fun Reticle(color: Color, modifier: Modifier = Modifier) {
         ),
         label = "sweepProgress",
     )
+    val offsetFraction = if (reducedMotion) 0.5f else progress
 
     BoxWithConstraints(modifier = modifier) {
         // Travel is a fraction of the reticle, not of the 2dp line itself.
@@ -477,7 +481,7 @@ private fun Reticle(color: Color, modifier: Modifier = Modifier) {
             modifier = Modifier
                 .fillMaxWidth()
                 .height(2.dp)
-                .offset(y = start + travel * progress)
+                .offset(y = start + travel * offsetFraction)
                 .shadow(7.dp, CircleShape, clip = false)
                 .background(color, CircleShape),
         )
@@ -699,8 +703,7 @@ private fun Context.hasCameraPermission(): Boolean =
         PackageManager.PERMISSION_GRANTED
 
 private fun Context.copyToClipboard(text: String) {
-    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("QuickScan", text))
+    ClipboardGuard.copy(this, getString(R.string.app_name), text)
 }
 
 private fun Context.showToast(message: ScannerMessage) {

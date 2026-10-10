@@ -1,7 +1,5 @@
 package com.quickscan.feature.create
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Context
 import android.graphics.Bitmap
 import android.widget.Toast
@@ -46,6 +44,7 @@ import kotlinx.coroutines.withContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quickscan.R
+import com.quickscan.core.util.ClipboardGuard
 import com.quickscan.core.qr.QrExporter
 import com.quickscan.core.qr.QrLogo
 import com.quickscan.core.qr.QrRenderer
@@ -656,6 +655,5 @@ private fun Swatch(colour: Int, selected: Boolean, onClick: () -> Unit) {
 }
 
 private fun Context.copyToClipboard(text: String) {
-    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-    clipboard.setPrimaryClip(ClipData.newPlainText("QuickScan", text))
+    ClipboardGuard.copy(this, getString(R.string.app_name), text)
 }
