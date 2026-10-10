@@ -24,6 +24,12 @@ data class ScanGroup(
     val scans: List<ScanEntity>,
 )
 
+/** A type the selection spans, with how many of its rows are ticked. */
+data class TypeCount(
+    val type: PayloadType,
+    val count: Int,
+)
+
 data class HistoryUiState(
     val groups: List<ScanGroup> = emptyList(),
     val pinned: List<ScanEntity> = emptyList(),
@@ -36,14 +42,26 @@ data class HistoryUiState(
     val totalUnfiltered: Int = 0,
     /** Ids the filter and search currently allow, for select-all. */
     val visibleIds: List<Long> = emptyList(),
+    /** Types present in the selection, each with its ticked count. */
+    val selectionByType: List<TypeCount> = emptyList(),
+    /** Types the bulk actions apply to; null means every ticked type. */
+    val scope: Set<PayloadType>? = null,
+    /** The ticked ids the bulk actions actually reach. */
+    val scopedSelection: Set<Long> = emptySet(),
+    /** How many of [scopedSelection] are already pinned. */
+    val scopedPinned: Int = 0,
 ) {
     val isSelecting: Boolean get() = selection.isNotEmpty()
     val isEmpty: Boolean get() = groups.isEmpty() && totalUnfiltered == 0
     val hasNoMatches: Boolean get() = groups.isEmpty() && totalUnfiltered > 0
 
-    /** Rows that vanished while selected must not stay stuck ticked. */
-    fun pruneSelection(): HistoryUiState =
-        copy(selection = selection intersect visibleIds.toSet())
+    /**
+     * True when every row in scope is pinned, which turns the pin action into
+     * an unpin. A mixed selection pins, because the useful reading of "pin
+     * these" when some are already pinned is "make them all pinned".
+     */
+    val allPinned: Boolean
+        get() = scopedSelection.isNotEmpty() && scopedPinned == scopedSelection.size
 }
 
 @HiltViewModel
@@ -56,6 +74,9 @@ class HistoryViewModel @Inject constructor(
     private val searchOpen = MutableStateFlow(false)
     private val selection = MutableStateFlow<Set<Long>>(emptySet())
 
+    /** Types the bulk actions are narrowed to; null means no narrowing. */
+    private val scope = MutableStateFlow<Set<PayloadType>?>(null)
+
     private val allScans = scanRepository.observeScans()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -66,8 +87,9 @@ class HistoryViewModel @Inject constructor(
         query,
         searchOpen,
         selection,
-    ) { activeFilter, activeQuery, isSearchOpen, selected ->
-        listOf(activeFilter, activeQuery, isSearchOpen, selected)
+        scope,
+    ) { activeFilter, activeQuery, isSearchOpen, selected, activeScope ->
+        listOf(activeFilter, activeQuery, isSearchOpen, selected, activeScope)
     }
 
     val state: StateFlow<HistoryUiState> = combine(
@@ -83,12 +105,37 @@ class HistoryViewModel @Inject constructor(
         val isSearchOpen = controlValues[2] as Boolean
         @Suppress("UNCHECKED_CAST")
         val selected = controlValues[3] as Set<Long>
+        @Suppress("UNCHECKED_CAST")
+        val activeScope = controlValues[4] as Set<PayloadType>?
         val searched = if (activeQuery.isBlank()) {
             scans
         } else {
             scans.filter { it.title.contains(activeQuery, ignoreCase = true) }
         }
         val filtered = searched.filter { activeFilter.matches(it.payloadType()) }
+        val visibleIds = filtered.map { row -> row.id }
+
+        // Rows that vanished while ticked must not stay selected, and every
+        // derived number is computed from what survives, not from the raw
+        // selection — otherwise the toolbar could claim a count the actions
+        // cannot reach.
+        val kept = selected intersect visibleIds.toSet()
+        val typeById = filtered.associate { row -> row.id to row.payloadType() }
+        // eachCount() has no defined iteration order, so the chips are put
+        // back into enum order; otherwise the row reshuffles between emissions.
+        val byType = filtered.filter { row -> row.id in kept }
+            .groupingBy { row -> row.payloadType() }
+            .eachCount()
+            .map { (type, count) -> TypeCount(type, count) }
+            .sortedBy { it.type.ordinal }
+
+        // A scope naming a type with no ticked rows left would leave the
+        // toolbar with nothing to act on, so it falls back to all of them.
+        val survivingScope = activeScope?.takeIf { wanted ->
+            byType.any { it.type in wanted }
+        }
+        val scoped = idsInScope(kept, typeById, survivingScope)
+        val scopedPinned = filtered.count { row -> row.isPinned && row.id in scoped }
 
         HistoryUiState(
             groups = group(filtered.filterNot { it.isPinned }),
@@ -98,9 +145,13 @@ class HistoryViewModel @Inject constructor(
             query = activeQuery,
             searchOpen = isSearchOpen,
             totalUnfiltered = scans.size,
-            visibleIds = filtered.map { row -> row.id },
-            selection = selected,
-        ).pruneSelection()
+            visibleIds = visibleIds,
+            selection = kept,
+            selectionByType = byType,
+            scope = survivingScope,
+            scopedSelection = scoped,
+            scopedPinned = scopedPinned,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoryUiState())
 
     init {
@@ -142,20 +193,42 @@ class HistoryViewModel @Inject constructor(
 
     fun clearSelection() {
         selection.value = emptySet()
+        scope.value = null
+    }
+
+    /**
+     * Narrows the bulk actions to one type, or widens them back out. Turning a
+     * type off is what turns "Delete 9" into "delete only the Wi-Fi ones".
+     */
+    fun toggleTypeScope(type: PayloadType) {
+        val present = state.value.selectionByType.mapTo(mutableSetOf()) { it.type }
+        scope.value = nextTypeScope(present, scope.value, type)
+    }
+
+    /**
+     * Pins or unpins everything the scope reaches. The selection survives: a
+     * user who pins three rows usually still wants to share or delete them.
+     */
+    fun setSelectedPinned(pinned: Boolean) {
+        val ids = state.value.scopedSelection.toList()
+        if (ids.isEmpty()) return
+        viewModelScope.launch { scanRepository.setPinned(ids, pinned) }
     }
 
     fun deleteSelected(onDone: () -> Unit) {
-        val ids = selection.value.toList()
+        val ids = state.value.scopedSelection.toList()
         if (ids.isEmpty()) return
         viewModelScope.launch {
             scanRepository.deleteAll(ids)
             selection.value = emptySet()
+            scope.value = null
             onDone()
         }
     }
 
     suspend fun selectedPayloads(): String =
-        scanRepository.rawValues(selection.value.toList()).joinToString("\n\n")
+        scanRepository.rawValues(state.value.scopedSelection.toList())
+            .joinToString("\n\n")
 
     fun clearHistory() {
         viewModelScope.launch { scanRepository.clear() }

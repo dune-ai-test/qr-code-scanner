@@ -49,6 +49,18 @@ private class FakeScanDao : ScanDao {
         rows.removeAll { it.id in ids }
     }
 
+    override suspend fun setPinned(ids: List<Long>, pinned: Boolean): Int {
+        var changed = 0
+        rows.indices.forEach { index ->
+            val row = rows[index]
+            if (row.id in ids) {
+                rows[index] = row.copy(isPinned = pinned)
+                changed++
+            }
+        }
+        return changed
+    }
+
     override suspend fun findByIds(ids: List<Long>): List<ScanEntity> =
         rows.filter { it.id in ids }.sortedByDescending { it.createdAt }
 
@@ -312,6 +324,69 @@ class ScanRepositoryTest {
     fun `toggling an unknown id is a no-op`() = runTest {
         val repo = repository()
         assertFalse(repo.togglePinned(4_242L))
+    }
+
+    @Test
+    fun `setPinned pins every row in the selection`() = runTest {
+        val dao = FakeScanDao()
+        val repo = repository(dao)
+        val first = repo.record(url, ScanSource.Camera)
+        val second = repo.record(ScannedPayload.Text("second"), ScanSource.Camera, at = NOW + 10)
+
+        val changed = repo.setPinned(listOf(first, second), pinned = true)
+
+        assertEquals(2, changed)
+        assertTrue(dao.rows.all { it.isPinned })
+    }
+
+    @Test
+    fun `setPinned pins the already-pinned rows too rather than unpinning them`() = runTest {
+        // The whole point of a bulk action: "pin these" means pinned, not
+        // "invert each one", which would scatter a mixed selection.
+        val dao = FakeScanDao()
+        val repo = repository(dao)
+        val first = repo.record(url, ScanSource.Camera)
+        val second = repo.record(ScannedPayload.Text("second"), ScanSource.Camera, at = NOW + 10)
+        repo.togglePinned(first)
+
+        repo.setPinned(listOf(first, second), pinned = true)
+
+        assertTrue(dao.rows.all { it.isPinned })
+    }
+
+    @Test
+    fun `setPinned with false unpins the whole selection`() = runTest {
+        val dao = FakeScanDao()
+        val repo = repository(dao)
+        val first = repo.record(url, ScanSource.Camera)
+        val second = repo.record(ScannedPayload.Text("second"), ScanSource.Camera, at = NOW + 10)
+        repo.setPinned(listOf(first, second), pinned = true)
+
+        repo.setPinned(listOf(first, second), pinned = false)
+
+        assertTrue(dao.rows.none { it.isPinned })
+    }
+
+    @Test
+    fun `setPinned leaves rows outside the selection alone`() = runTest {
+        val dao = FakeScanDao()
+        val repo = repository(dao)
+        val first = repo.record(url, ScanSource.Camera)
+        repo.record(ScannedPayload.Text("untouched"), ScanSource.Camera, at = NOW + 10)
+
+        repo.setPinned(listOf(first), pinned = true)
+
+        assertEquals(listOf(true, false), dao.rows.sortedBy { it.id }.map { it.isPinned })
+    }
+
+    @Test
+    fun `setPinned with no ids does nothing`() = runTest {
+        val dao = FakeScanDao()
+        val repo = repository(dao)
+        repo.record(url, ScanSource.Camera)
+
+        assertEquals(0, repo.setPinned(emptyList(), pinned = true))
+        assertFalse(dao.rows.single().isPinned)
     }
 }
 

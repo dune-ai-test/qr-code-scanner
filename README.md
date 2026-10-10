@@ -68,10 +68,23 @@ Everything the build contains today.
 - **Search** across the list
 - **Date grouping** — Today, Yesterday, weekday, then date
 - **Favourites** — pinned scans in their own section, sorted to the top
-- **Bulk actions** — long-press to select, select-all, share as text, and
-  delete with confirmation and a count
+- **Bulk actions** — long-press to select, select-all, share as text, pin,
+  and delete with confirmation and a count
+- **Per-type bulk actions** — when a selection spans more than one type, a
+  chip row appears under the toolbar with each type and its ticked count.
+  Switching a chip off takes that type out of *every* bulk action, so
+  "delete only the Wi-Fi ones" is two taps: turn Links and Text off, delete.
+  The count in the toolbar and in the confirmation both narrow with the
+  chips, so the number being deleted is always the number on screen.
+  The browse filters hide while selecting, so there is only ever one row of
+  chips on screen and its meaning is unambiguous.
 - **Empty state** with a scan call to action and three suggestions
 - **Clear scan history**, with confirmation
+
+Bulk pin writes the flag outright rather than flipping each row. Pinning a
+selection where some rows are already pinned means pinning all of them;
+toggling would scatter the ones that happened to be unpinned. When every row
+in scope is already pinned the same button becomes an unpin.
 
 ### Settings
 
@@ -114,7 +127,7 @@ Everything the build contains today.
 | 3 | Scan | CameraX preview, reticle, torch, flip, gallery, paste |
 | 4 | Result — website | Decoded URL with copy, open, share and pin |
 | 5 | Result — Wi-Fi | SSID, revealable password, join action |
-| 6 | History | Stats, filters, search, favourites, bulk actions |
+| 6 | History | Stats, filters, search, favourites, bulk and per-type bulk actions |
 | 7 | History — empty | First-run state with suggestions |
 | 8 | Create | Live preview, four content types, styling, PNG export |
 | 9 | Settings | Scanner, appearance, storage, permissions, about |
@@ -146,7 +159,7 @@ Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore 
 
 The GitHub Actions workflow in `.github/workflows/android.yml` is the build. Every push to `main` and every pull request runs:
 
-- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`)
+- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`, `Zoom`, `SelectionScope`)
 - `lintDebug`
 - `assembleDebug`
 
@@ -246,9 +259,10 @@ Worth knowing before trusting any of this on a device.
 
 - **CI is not the same as a device.** Everything compiles, lints and passes
   unit tests, but the most recent features — PNG export, the style panel,
-  What's new, favourites, bulk actions, launcher shortcuts, Geist, the
-  clipboard policy and the scanning budget — have not been seen on a
-  screen, because no phone was connected while they were written.
+  What's new, favourites, bulk actions, per-type bulk actions, launcher
+  shortcuts, Geist, camera zoom, the clipboard policy and the scanning
+  budget — have not been seen on a screen, because no phone was connected
+  while they were written.
 - **Live auto-detection is unconfirmed** on real hardware. The shutter
   path, which uses the same decoder, is proven: it reads a photographed
   QR end to end. The live path additionally goes through `FrameGate`,

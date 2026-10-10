@@ -99,6 +99,17 @@ class ScanRepository(
         return next
     }
 
+    /**
+     * Pins or unpins a selection outright rather than toggling each row. A bulk
+     * action has to state its destination: pinning a mixed selection where some
+     * rows are already pinned means pinning all of them, not scattering the
+     * ones that happened to be unpinned.
+     */
+    suspend fun setPinned(ids: List<Long>, pinned: Boolean): Int {
+        if (ids.isEmpty()) return 0
+        return dao.setPinned(ids, pinned)
+    }
+
     suspend fun find(id: Long): ScanEntity? = dao.findById(id)
 
     suspend fun parse(entity: ScanEntity): ScannedPayload =

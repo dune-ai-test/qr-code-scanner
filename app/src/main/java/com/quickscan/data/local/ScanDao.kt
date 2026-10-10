@@ -37,6 +37,14 @@ interface ScanDao {
     @Query("DELETE FROM scans WHERE id IN (:ids)")
     suspend fun deleteByIds(ids: List<Long>)
 
+    /**
+     * Sets the pin flag across a whole selection in one statement. Flipping row
+     * by row would both write N times and land on the wrong answer: the user is
+     * asking for "make these pinned", not "invert each of these".
+     */
+    @Query("UPDATE scans SET isPinned = :pinned WHERE id IN (:ids)")
+    suspend fun setPinned(ids: List<Long>, pinned: Boolean): Int
+
     @Query("DELETE FROM scans")
     suspend fun deleteAll()
 

@@ -110,6 +110,12 @@
     <string name="select_all">Select all</string>
     <string name="delete_selected">Delete selected</string>
     <string name="share_selected">Share selected</string>
+    <string name="pin_selected">Pin selected</string>
+    <string name="unpin_selected">Remove from favourites</string>
+    <string name="pinned_selected">%1$d scans pinned</string>
+    <string name="unpinned_selected">%1$d removed from favourites</string>
+    <string name="selection_scoped_count">%1$d of %2$d</string>
+    <string name="selection_scoped_count_desc">%1$d of %2$d selected. Actions apply to these.</string>
     <string name="delete_selected_title">Delete %1$d scans?</string>
     <string name="delete_selected_body">These are removed from this device. It cannot be undone.</string>
     <string name="deleted_selected">%1$d scans deleted</string>

@@ -15,6 +15,7 @@ import com.quickscan.data.local.ScanEntity
 import com.quickscan.core.ui.component.QSIconTile
 import com.quickscan.core.ui.component.LucideChevronRight
 import com.quickscan.core.ui.component.LucideBookmark
+import com.quickscan.core.ui.component.LucideBookmarkCheck
 import com.quickscan.core.ui.component.LucideCheck
 import com.quickscan.core.ui.component.LucideSquareCheck
 import com.quickscan.core.ui.component.LucideShare2
@@ -31,6 +32,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
@@ -104,6 +106,8 @@ fun HistoryScreen(
 
     var confirmDelete by remember { mutableStateOf(false) }
     var deletedCount by remember { mutableIntStateOf(0) }
+    var toastCount by remember { mutableIntStateOf(0) }
+    var toastPinned by remember { mutableStateOf(false) }
 
     // Sharing a selection hands the raw text to another app; nothing is sent.
     val shareSelection = {
@@ -130,9 +134,21 @@ fun HistoryScreen(
         if (state.isSelecting) {
             SelectionBar(
                 count = state.selection.size,
+                scopedCount = state.scopedSelection.size,
+                allPinned = state.allPinned,
+                typeCounts = state.selectionByType,
+                scope = state.scope,
+                onToggleType = viewModel::toggleTypeScope,
                 onClose = viewModel::clearSelection,
                 onSelectAll = viewModel::selectAll,
                 onShare = { shareSelection() },
+                onPin = {
+                    val pinned = !state.allPinned
+                    val affected = state.scopedSelection.size
+                    viewModel.setSelectedPinned(pinned)
+                    toastCount = affected
+                    toastPinned = pinned
+                },
                 onDelete = { confirmDelete = true },
             )
         } else {
@@ -193,15 +209,17 @@ fun HistoryScreen(
                     }
                 }
 
-                item {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Space.xs),
-                    ) {
-                        FilterChips(
-                            selected = state.filter,
-                            onSelect = viewModel::setFilter,
-                        )
+                if (!state.isSelecting) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(Space.xs),
+                        ) {
+                            FilterChips(
+                                selected = state.filter,
+                                onSelect = viewModel::setFilter,
+                            )
+                        }
                     }
                 }
 
@@ -277,7 +295,7 @@ fun HistoryScreen(
                     Text(
                         stringResource(
                             R.string.delete_selected_title,
-                            state.selection.size,
+                            state.scopedSelection.size,
                         ),
                     )
                 },
@@ -287,7 +305,7 @@ fun HistoryScreen(
                         text = stringResource(R.string.delete_selected),
                         color = palette.danger,
                         modifier = Modifier.clickable {
-                            val count = state.selection.size
+                            val count = state.scopedSelection.size
                             viewModel.deleteSelected {
                                 deletedCount = count
                                 confirmDelete = false
@@ -313,6 +331,24 @@ fun HistoryScreen(
                     Toast.LENGTH_SHORT,
                 ).show()
                 deletedCount = 0
+            }
+        }
+
+        if (toastCount > 0) {
+            LaunchedEffect(toastCount, toastPinned) {
+                Toast.makeText(
+                    context,
+                    context.getString(
+                        if (toastPinned) {
+                            R.string.pinned_selected
+                        } else {
+                            R.string.unpinned_selected
+                        },
+                        toastCount,
+                    ),
+                    Toast.LENGTH_SHORT,
+                ).show()
+                toastCount = 0
             }
         }
     }
@@ -396,61 +432,118 @@ private fun ScanRow(
 @Composable
 private fun SelectionBar(
     count: Int,
+    scopedCount: Int,
+    allPinned: Boolean,
+    typeCounts: List<TypeCount>,
+    scope: Set<PayloadType>?,
+    onToggleType: (PayloadType) -> Unit,
     onClose: () -> Unit,
     onSelectAll: () -> Unit,
     onShare: () -> Unit,
+    onPin: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val palette = QsTheme.palette
     val text = QsTheme.text
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(56.dp)
-            .padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Box(
+    // Four action circles leave roughly 120pt for the count, so the scoped
+    // form drops the word "selected" and hands the full sentence to the
+    // screen reader instead of the label.
+    val narrowed = scopedCount != count
+    val countLabel = if (narrowed) {
+        stringResource(R.string.selection_scoped_count, scopedCount, count)
+    } else {
+        stringResource(R.string.selected_count, count)
+    }
+    val countDescription = if (narrowed) {
+        stringResource(R.string.selection_scoped_count_desc, scopedCount, count)
+    } else {
+        countLabel
+    }
+
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
             modifier = Modifier
-                .size(36.dp)
-                .clip(CircleShape)
-                .background(palette.surface)
-                .combinedClickable(onClick = onClose),
-            contentAlignment = Alignment.Center,
+                .fillMaxWidth()
+                .height(56.dp)
+                .padding(horizontal = 20.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = LucideX,
-                contentDescription = stringResource(R.string.setting_cancel),
-                tint = palette.ink,
-                modifier = Modifier.size(18.dp),
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(palette.surface)
+                    .combinedClickable(onClick = onClose),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = LucideX,
+                    contentDescription = stringResource(R.string.setting_cancel),
+                    tint = palette.ink,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+
+            Text(
+                text = countLabel,
+                style = text.nav16,
+                color = palette.ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .semantics { contentDescription = countDescription },
+            )
+
+            SelectionAction(
+                icon = LucideSquareCheck,
+                label = stringResource(R.string.select_all),
+                onClick = onSelectAll,
+            )
+            SelectionAction(
+                icon = if (allPinned) LucideBookmarkCheck else LucideBookmark,
+                label = stringResource(
+                    if (allPinned) R.string.unpin_selected else R.string.pin_selected,
+                ),
+                onClick = onPin,
+            )
+            SelectionAction(
+                icon = LucideShare2,
+                label = stringResource(R.string.share_selected),
+                onClick = onShare,
+            )
+            SelectionAction(
+                icon = LucideTrash2,
+                label = stringResource(R.string.delete_selected),
+                tint = palette.danger,
+                onClick = onDelete,
             )
         }
 
-        Text(
-            text = stringResource(R.string.selected_count, count),
-            style = text.nav16,
-            color = palette.ink,
-            modifier = Modifier.weight(1f),
-        )
-
-        SelectionAction(
-            icon = LucideSquareCheck,
-            label = stringResource(R.string.select_all),
-            onClick = onSelectAll,
-        )
-        SelectionAction(
-            icon = LucideShare2,
-            label = stringResource(R.string.share_selected),
-            onClick = onShare,
-        )
-        SelectionAction(
-            icon = LucideTrash2,
-            label = stringResource(R.string.delete_selected),
-            tint = palette.danger,
-            onClick = onDelete,
-        )
+        // Only worth the row when the selection actually spans more than one
+        // type: with a single type there is nothing to narrow. It scrolls,
+        // because five types do not fit a 358pt canvas at readable widths.
+        // The browse filters are hidden while selecting, so this is the only
+        // row of chips on screen and its meaning is unambiguous.
+        if (typeCounts.size > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(start = 20.dp, end = 20.dp, bottom = Space.sm),
+                horizontalArrangement = Arrangement.spacedBy(Space.xs),
+            ) {
+                typeCounts.forEach { entry ->
+                    QSChip(
+                        label = stringResource(entry.type.labelRes) + "  " + entry.count,
+                        selected = scope == null || entry.type in scope,
+                        onClick = { onToggleType(entry.type) },
+                    )
+                }
+            }
+        }
     }
 }
 
