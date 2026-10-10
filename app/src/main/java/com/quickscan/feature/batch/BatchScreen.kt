@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
@@ -28,12 +29,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quickscan.R
 import com.quickscan.core.qr.BatchPayloads
 import com.quickscan.core.qr.QrBatchRenderer
 import com.quickscan.core.qr.QrExporter
+import com.quickscan.core.qr.QrStyle
 import com.quickscan.core.ui.component.LucideDownload
 import com.quickscan.core.ui.component.LucideLayoutGrid
 import com.quickscan.core.ui.component.LucideShare2
@@ -47,12 +47,17 @@ import com.quickscan.core.ui.theme.Space
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * Everything this screen shows is derived from one text field, so it is held
+ * here rather than in a ViewModel: `rememberSaveable` already survives the
+ * rotation that a ViewModel would exist for, and there is no repository to
+ * inject.
+ */
 @Composable
-fun BatchScreen(
-    onBack: () -> Unit,
-    viewModel: BatchViewModel = hiltViewModel(),
-) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+fun BatchScreen(onBack: () -> Unit) {
+    var input by rememberSaveable { mutableStateOf("") }
+    val style = QrStyle.DEFAULT
+    val state = remember(input) { BatchUiState.of(input) }
     val palette = QsTheme.palette
     val text = QsTheme.text
     val context = LocalContext.current
@@ -70,7 +75,7 @@ fun BatchScreen(
         building = true
         try {
             val bitmap = withContext(Dispatchers.Default) {
-                QrBatchRenderer.render(items, state.style)
+                QrBatchRenderer.render(items, style)
             }
             sheet = Sheet(items, bitmap)
         } finally {
@@ -95,7 +100,7 @@ fun BatchScreen(
             onBack = onBack,
             actionIcon = LucideLayoutGrid,
             actionDescription = stringResource(R.string.batch_clear),
-            onAction = { viewModel.setInput(""); sheet = null },
+            onAction = { input = ""; sheet = null },
         )
 
         Column(
@@ -116,8 +121,8 @@ fun BatchScreen(
             )
 
             QSTextField(
-                value = state.input,
-                onValueChange = viewModel::setInput,
+                value = input,
+                onValueChange = { input = it },
                 label = stringResource(R.string.batch_input_label),
                 placeholder = stringResource(R.string.batch_input_placeholder),
                 singleLine = false,
@@ -216,6 +221,31 @@ fun BatchScreen(
 
             Spacer(Modifier.height(Space.hero))
         }
+    }
+}
+
+private data class BatchUiState(
+    val items: List<BatchPayloads.Item>,
+    /** Non-blank lines the user actually pasted. */
+    val pastedCount: Int,
+) {
+    /**
+     * Lines that became no code — duplicates, and anything past the cap.
+     * Surfaced rather than swallowed, because a sheet with fewer codes than
+     * lines pasted looks like a bug and is one unless it says so.
+     */
+    val droppedCount: Int get() = (pastedCount - items.size).coerceAtLeast(0)
+
+    val overCap: Boolean get() = pastedCount > BatchPayloads.MAX_ITEMS
+
+    val canBuild: Boolean get() = items.isNotEmpty()
+
+    companion object {
+        /** Parsed once per edit; recomposition reads it many times. */
+        fun of(input: String): BatchUiState = BatchUiState(
+            items = BatchPayloads.parse(input),
+            pastedCount = input.lineSequence().count { line -> line.isNotBlank() },
+        )
     }
 }
 
