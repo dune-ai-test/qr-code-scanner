@@ -227,7 +227,7 @@ class CameraController(
      * answer for as long as it is true.
      */
     private fun publishZoomBounds(camera: Camera) {
-        val state = camera.zoomState.value ?: return
+        val state = camera.cameraInfo.zoomState.value ?: return
         _zoom.value = ZoomState(
             min = state.minZoomRatio,
             max = state.maxZoomRatio,
