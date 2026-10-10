@@ -34,7 +34,10 @@ class QrStyleCodecTest {
     fun `every logo survives`() {
         for (logo in QrLogo.entries) {
             val style = QrStyle(logo = logo)
-            assertEquals(logo, QrStyleCodec.decode(QrStyleCodec.encode(style)).logo)
+            val decoded = QrStyleCodec.decode(QrStyleCodec.encode(style)).logo
+            // None is the absence of a logo, so it comes back as null rather
+            // than as an enum constant that means nothing.
+            assertEquals(logo.takeIf { it != QrLogo.None }, decoded)
         }
     }
 

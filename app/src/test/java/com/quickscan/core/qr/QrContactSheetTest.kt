@@ -139,8 +139,12 @@ class QrContactSheetTest {
     }
 
     @Test
-    fun `a single code keeps a square cell`() {
+    fun `a cell holds its code and then its caption`() {
+        // The caption sits directly below the code and inside the cell, which
+        // is what the label-fits check depends on.
         val options = QrContactSheet.optionsFor(1)
-        assertEquals(options.codeSize, options.cellWidth)
+        val place = QrContactSheet.placements(options).single()
+        assertEquals(place.codeTop + options.codeSize, place.labelTop)
+        assertTrue(options.cellHeight > options.codeSize)
     }
 }

@@ -60,17 +60,22 @@ class LumaRotationTest {
     }
 
     @Test
-    fun `a quarter turn is its own inverse`() {
+    fun `four quarter turns come back to the start`() {
+        // A quarter turn is not its own inverse — two of them are a half turn.
+        // Four is the round trip, and each pass swaps the axes.
         val width = 5
         val height = 3
-        val src = plane(width, height)
+        var round = plane(width, height)
+        var w = width
+        var h = height
+        repeat(4) {
+            round = LumaRotation.rotate90(round, w, w, h)
+            val swap = w
+            w = h
+            h = swap
+        }
 
-        val round = LumaRotation.rotate90(
-            LumaRotation.rotate90(src, width, width, height),
-            height, height, width,
-        )
-
-        assertArrayEquals(src, round)
+        assertArrayEquals(plane(width, height), round)
     }
 
     @Test

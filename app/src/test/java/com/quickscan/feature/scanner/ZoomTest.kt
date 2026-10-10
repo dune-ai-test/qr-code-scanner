@@ -41,9 +41,10 @@ class ZoomTest {
         assertEquals(5f, current, 0.001f)
         current = Zoom.nextStep(current, 1f, 10f)
         assertEquals(10f, current, 0.001f)
-        // At the top it returns to the first stop rather than sticking.
+        // At the top it returns to the first stop the lens has rather than
+        // sticking. A lens that cannot go below 1x wraps to 1x, not to 0.5x.
         current = Zoom.nextStep(current, 1f, 10f)
-        assertEquals(0.5f, current, 0.001f)
+        assertEquals(1f, current, 0.001f)
     }
 
     @Test

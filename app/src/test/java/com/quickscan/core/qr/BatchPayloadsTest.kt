@@ -105,7 +105,11 @@ class BatchPayloadsTest {
 
     @Test
     fun `a label names the code so the sheet is readable`() {
-        assertEquals("example.com", parse("https://example.com").single().label)
+        // headline, not toastLabel: a sheet has room to wrap and ellipsis what
+        // a toast cannot, and the code underneath is what actually encodes the
+        // address. A toast wants the host, a printed sheet wants what was
+        // pasted.
+        assertEquals("https://example.com", parse("https://example.com").single().label)
         assertEquals("Home", parse("WIFI:T:WPA;S:Home;P:secret;;").single().label)
     }
 
