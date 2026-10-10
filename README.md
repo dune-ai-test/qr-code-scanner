@@ -4,6 +4,104 @@ A local-first QR and barcode scanner for Android, built around one rule: **every
 
 The visual language is deliberately iOS-native rather than Material: a floating frosted capsule tab bar, 12–31 px corner radii, hairline strokes and quiet layered shadows, so the product reads as a first-party system utility rather than an Android port. Every colour, spacing step and type size is a token in `core/ui/theme`, so the whole product re-themes from a single change.
 
+## Features
+
+Everything the build contains today.
+
+### Onboarding
+
+- **Welcome screen** — hero with the procedural QR, corner brackets and
+  accent glow; three value props (instant decoding, works offline, private
+  by default); "Get started"
+- **Name screen** — "What should we call you?", an avatar that recomputes
+  its initial as you type, a field with a focus ring and clear button, a
+  green privacy hint, and both Continue and "Skip for now"
+- Persisted, so it runs once
+
+### Scanning
+
+- **CameraX** preview with live analysis
+- **Reticle** with four corner brackets, and a sweep line that holds still
+  when the system animation scale is off
+- **Auto-detect pill** — green while codes are being read, red when the
+  shutter is the only way in
+- **Torch** toggle and **front/back camera** flip
+- **Shutter button** — grabs a single frame and decodes it, in either
+  auto-detect mode
+- **Scan image** from the photo library, and **Paste link** for a typed or
+  shared address
+- **Formats**: QR, Data Matrix, Aztec, PDF417, EAN-13, EAN-8, UPC-A, UPC-E,
+  Code 128, Code 39, Code 93, ITF, Codabar
+- **Centre-crop decoding** with a full-frame fallback, plus a retry on
+  inverted frames for light-on-dark codes
+- **FrameGate** and **full-resolution escalation** — see [Scanning](#scanning)
+
+### Results — one layout per payload type
+
+- **URL** — real QR, type badge, decoded address, timestamp, copy, open and
+  share, a details card (Type, Length, Scanned, Source), and delete
+- **Wi-Fi** — wifi chip, SSID, security, a revealable password, join, copy,
+  details, and "Save for later"
+- **Contact** — avatar, name, phone and email, call or share
+- **Text and product** — type icon, badge, raw content, share
+- **Pin and unpin** from the nav action
+
+### Create
+
+- **Four content types** — Link, Text, Wi-Fi, Contact, each with its own
+  field set
+- **Live preview** that updates as you type
+- **Style & colours** — five module colours, three corner shapes (square,
+  soft, round) and five logo overlays (none, app, link, Wi-Fi, contact). A
+  logo switches the code to high error correction so it survives the hole
+- **Save to history**
+- **Export** — renders a 1024px PNG, saves it to Photos, or shares the
+  image itself through a FileProvider
+
+### History
+
+- **Stats** — total scans, this week, links
+- **Filter chips** — All, Links, Wi-Fi, Text
+- **Search** across the list
+- **Date grouping** — Today, Yesterday, weekday, then date
+- **Favourites** — pinned scans in their own section, sorted to the top
+- **Bulk actions** — long-press to select, select-all, share as text, and
+  delete with confirmation and a count
+- **Empty state** with a scan call to action and three suggestions
+- **Clear scan history**, with confirmation
+
+### Settings
+
+- **Profile** card
+- **Scanner** — auto-detect, default camera, copy automatically, scan
+  sound, vibrate
+- **Appearance** — dark mode, four accent colours, larger text
+- **History & storage** — a retention picker offering 7 days, 30 days,
+  90 days, 1 year and **Always**; storage used; clear history
+- **Permissions** — camera, photo library and notifications, each showing
+  live grant state
+- **About** — version, and What's new
+- **What's new screen** — the release history, with an unread dot on the
+  Settings row until it has been opened
+
+### Navigation and system
+
+- A capsule tab bar across Scan, History, Create and Settings that
+  **floats over** the content instead of reserving a band for it
+- Nav host with typed routes
+- **Launcher shortcuts** for Scan, History and Create
+
+### Underneath
+
+- **Design tokens** — colour, type, radii and spacing as one system, with
+  four accents each carrying a light and a dark tint
+- **Geist** vendored in four weights
+- **ZXing** for both decode and encode, behind a stateless decoder
+- **Room** for history, **DataStore** for preferences, **Hilt** for wiring
+- **Procedural QR generator** — seeded 25x25 grids with finder patterns,
+  separators, timing lines, an alignment block and the dark module
+- **Clipboard expiry** — see [Privacy](#privacy)
+
 ## Screens
 
 | # | Screen | Notes |
@@ -11,12 +109,13 @@ The visual language is deliberately iOS-native rather than Material: a floating 
 | 1 | Onboarding — welcome | Value props, procedural QR hero |
 | 2 | Onboarding — name | Live avatar preview that tracks the field |
 | 3 | Scan | CameraX preview, reticle, torch, flip, gallery, paste |
-| 4 | Result — website | Decoded URL with copy, open and share |
+| 4 | Result — website | Decoded URL with copy, open, share and pin |
 | 5 | Result — Wi-Fi | SSID, revealable password, join action |
-| 6 | History | Stats, filter chips, date grouping |
+| 6 | History | Stats, filters, search, favourites, bulk actions |
 | 7 | History — empty | First-run state with suggestions |
-| 8 | Create | Live preview, four content types |
+| 8 | Create | Live preview, four content types, styling, PNG export |
 | 9 | Settings | Scanner, appearance, storage, permissions, about |
+| 10 | What's new | Release history, read from `ReleaseNotes` |
 
 The result screen routes by payload type, so text, contact and product codes get their own action set rather than a URL-shaped one.
 
@@ -34,7 +133,7 @@ com.quickscan
 └── di               Hilt modules
 ```
 
-Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore · Navigation Compose. minSdk 26, targetSdk 35, JDK 17.
+Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore · Navigation Compose. minSdk 27, targetSdk 35, JDK 17.
 
 ## The local-first promise
 
@@ -137,3 +236,24 @@ animations are switched off.
 Screens that show a code without carrying real content (the onboarding hero, the scanner's permission state) use `QrPlaceholder`, a deterministic generator seeded by a long. It emits a true module grid — three 7×7 finder patterns with separators, row/column-6 timing lines, the spec-derived alignment block, the always-dark module and reserved format-information areas — with the data area filled from a seeded LCG. The same seed always paints the same code, and each call site picks its own seed.
 
 Everywhere real data appears, `QrCodeView` renders an actual ZXing `BitMatrix`, so the code on screen is scannable.
+
+## Status
+
+Worth knowing before trusting any of this on a device.
+
+- **CI is not the same as a device.** Everything compiles, lints and passes
+  unit tests, but the most recent features — PNG export, the style panel,
+  What's new, favourites, bulk actions, launcher shortcuts, Geist, the
+  clipboard policy and the scanning budget — have not been seen on a
+  screen, because no phone was connected while they were written.
+- **Live auto-detection is unconfirmed** on real hardware. The shutter
+  path, which uses the same decoder, is proven: it reads a photographed
+  QR end to end. The live path additionally goes through `FrameGate`,
+  which makes it stricter rather than looser, so it is the first thing
+  to check on a device.
+- **The signed release job has never run.** It needs the four keystore
+  secrets above and a `v*` tag; it is the only path in CI with no
+  execution history.
+- **Release builds are unverified with R8.** The ProGuard rules keep all
+  of ZXing, which may be broader than needed.
+- **Room schema export is off**, so the first migration will be blind.
