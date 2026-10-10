@@ -295,12 +295,20 @@ fun QSDivider(modifier: Modifier = Modifier, inset: Dp = 0.dp) {
 
 /** All-caps 11pt section label used above grouped cards. */
 @Composable
-fun QSSectionHeader(text: String, modifier: Modifier = Modifier) {
+fun QSSectionHeader(
+    text: String,
+    modifier: Modifier = Modifier,
+    align: TextAlign = TextAlign.Start,
+) {
     Text(
         text = text,
         style = QsTheme.text.label11,
         color = QsTheme.palette.inkFaint,
-        modifier = modifier.padding(horizontal = Space.xl),
+        // Full width, or textAlign has no box to align within.
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = Space.xl),
+        textAlign = align,
     )
 }
 

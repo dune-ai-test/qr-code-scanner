@@ -35,6 +35,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -138,7 +139,10 @@ fun SettingsScreen(
         ) {
             ProfileCard(name = state.displayName)
 
-            QSSectionHeader(text = stringResource(R.string.settings_section_scanner))
+            QSSectionHeader(
+                text = stringResource(R.string.settings_section_scanner),
+                align = TextAlign.Center,
+            )
             SettingsGroup {
                 QSSettingRow(
                     icon = LucideScanLine,
@@ -201,7 +205,10 @@ fun SettingsScreen(
                 )
             }
 
-            QSSectionHeader(text = stringResource(R.string.settings_section_appearance))
+            QSSectionHeader(
+                text = stringResource(R.string.settings_section_appearance),
+                align = TextAlign.Center,
+            )
             SettingsGroup {
                 QSSettingRow(
                     icon = LucideMoon,
@@ -230,7 +237,10 @@ fun SettingsScreen(
                 )
             }
 
-            QSSectionHeader(text = stringResource(R.string.settings_section_storage))
+            QSSectionHeader(
+                text = stringResource(R.string.settings_section_storage),
+                align = TextAlign.Center,
+            )
             SettingsGroup {
                 QSSettingRow(
                     icon = LucideBookmark,
@@ -260,7 +270,10 @@ fun SettingsScreen(
                 )
             }
 
-            QSSectionHeader(text = stringResource(R.string.settings_section_permissions))
+            QSSectionHeader(
+                text = stringResource(R.string.settings_section_permissions),
+                align = TextAlign.Center,
+            )
             SettingsGroup {
                 QSSettingRow(
                     icon = LucideCamera,
@@ -329,7 +342,10 @@ fun SettingsScreen(
                 )
             }
 
-            QSSectionHeader(text = stringResource(R.string.settings_section_about))
+            QSSectionHeader(
+                text = stringResource(R.string.settings_section_about),
+                align = TextAlign.Center,
+            )
             SettingsGroup {
                 QSSettingRow(
                     icon = LucideInfo,
