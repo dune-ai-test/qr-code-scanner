@@ -12,6 +12,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.quickscan.core.ui.component.TabDestination
 import com.quickscan.feature.create.CreateScreen
+import com.quickscan.feature.batch.BatchScreen
 import com.quickscan.feature.history.HistoryScreen
 import com.quickscan.feature.onboarding.OnboardingNameScreen
 import com.quickscan.feature.onboarding.OnboardingWelcomeScreen
@@ -87,8 +88,13 @@ fun QuickScanNavHost(
         composable(Routes.CREATE) {
             CreateScreen(
                 onBack = { navController.popBackStack() },
+                onOpenBatch = { navController.navigate(Routes.BATCH) },
                 onTabSelected = ::selectTab,
             )
+        }
+
+        composable(Routes.BATCH) {
+            BatchScreen(onBack = { navController.popBackStack() })
         }
 
         composable(Routes.SETTINGS) {

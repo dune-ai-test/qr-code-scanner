@@ -329,7 +329,13 @@ fun QSTextField(
                 .border(1.5.dp, borderColor, radius)
                 .padding(horizontal = Space.xl),
             horizontalArrangement = Arrangement.spacedBy(Space.md),
-            verticalAlignment = Alignment.CenterVertically,
+            // A pasted list wants to start at the top of its box; a one-line
+            // field wants to be centred in a 48px row.
+            verticalAlignment = if (singleLine) {
+                Alignment.CenterVertically
+            } else {
+                Alignment.Top
+            },
         ) {
             Box(modifier = Modifier.weight(1f)) {
                 BasicTextField(

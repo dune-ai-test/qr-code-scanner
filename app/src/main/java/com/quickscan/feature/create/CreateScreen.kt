@@ -50,6 +50,7 @@ import com.quickscan.core.qr.QrLogo
 import com.quickscan.core.qr.QrRenderer
 import com.quickscan.core.qr.QrStyle
 import com.quickscan.core.ui.component.LucideCheck
+import com.quickscan.core.ui.component.LucideLayoutGrid
 import com.quickscan.core.ui.component.LucideChevronDown
 import com.quickscan.core.ui.component.LucideChevronRight
 import com.quickscan.core.ui.component.LucideDownload
@@ -60,6 +61,7 @@ import com.quickscan.core.ui.component.LucideUser
 import com.quickscan.core.ui.component.LucideWifi
 import com.quickscan.core.ui.component.QSNavBar
 import com.quickscan.core.ui.component.QSChip
+import com.quickscan.core.ui.component.QSActionTile
 import com.quickscan.core.ui.component.QSPrimaryButton
 import com.quickscan.core.ui.component.QSSecondaryButton
 import com.quickscan.core.ui.component.QSSwitch
@@ -111,6 +113,7 @@ private val LOGO_CHOICES = listOf(
 @Composable
 fun CreateScreen(
     onBack: () -> Unit,
+    onOpenBatch: () -> Unit,
     onTabSelected: (TabDestination) -> Unit,
     viewModel: CreateViewModel = hiltViewModel(),
 ) {
@@ -313,6 +316,15 @@ fun CreateScreen(
                 onClick = viewModel::save,
                 enabled = state.canSave && !state.saving,
                 icon = LucideCheck,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Spacer(Modifier.height(Space.md))
+
+            QSActionTile(
+                icon = LucideLayoutGrid,
+                label = stringResource(R.string.batch_entry),
+                onClick = onOpenBatch,
                 modifier = Modifier.fillMaxWidth(),
             )
 

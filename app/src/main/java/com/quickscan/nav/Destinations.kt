@@ -12,6 +12,7 @@ object Routes {
     const val SCAN = "scan"
     const val HISTORY = "history"
     const val CREATE = "create"
+    const val BATCH = "batch"
     const val SETTINGS = "settings"
     const val WHATS_NEW = "whats-new"
 

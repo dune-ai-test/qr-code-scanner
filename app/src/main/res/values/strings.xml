@@ -45,6 +45,7 @@
     <string name="auto_detect">Auto-detect</string>
     <string name="continuous_mode">Continuous</string>
     <string name="hold_steady">Hold steady</string>
+    <string name="nav_batch">Batch</string>
     <string name="hold_steady_aligned">Hold steady — almost there</string>
     <string name="scanned_saved">%1$s saved</string>
     <string name="scanned_saved_named">%1$s · %2$s</string>
@@ -188,6 +189,27 @@
     <string name="create_fill_required">Fill in the required fields first</string>
     <string name="create_saved">QR code saved</string>
     <string name="export_section">EXPORT</string>
+
+    <!-- Batch generate -->
+    <string name="batch_entry">Batch generate</string>
+    <string name="batch_entry_body">One code per line, one sheet out.</string>
+    <string name="batch_headline">Paste a list</string>
+    <string name="batch_body">One link or note per line. Every line becomes its own code on a single printable sheet.</string>
+    <string name="batch_input_label">CODES</string>
+    <string name="batch_input_placeholder">https://example.com
+example.org
+WIFI:T:WPA;S:Home;P:secret;;</string>
+    <string name="batch_build">Build sheet</string>
+    <string name="batch_building">Building…</string>
+    <string name="batch_ready">%1$d codes ready</string>
+    <string name="batch_dropped">%1$d duplicate lines skipped</string>
+    <string name="batch_capped">Only the first %1$d of %2$d lines will be used</string>
+    <string name="batch_share">Share sheet</string>
+    <string name="batch_save">Save</string>
+    <string name="batch_save_failed">Could not save the sheet</string>
+    <string name="batch_clear">Clear the list</string>
+    <string name="batch_sheet_desc">The generated sheet of codes</string>
+    <string name="batch_sheet_size">%1$d codes · %2$d × %3$d px</string>
     <string name="save_qr_to_gallery">Save to Photos</string>
     <string name="share_qr_image">Share image</string>
     <string name="share_qr_chooser">Share QR code image</string>

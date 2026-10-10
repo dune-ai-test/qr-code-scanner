@@ -48,6 +48,8 @@ Everything the build contains today.
   keeps failing, driven by how many QR finder patterns are visible. Turns a
   scan that is not working into feedback instead of silence; see
   [Decode confidence](#decode-confidence)
+- **Batch generate** — paste a list, one per line, get every code on a single
+  printable sheet. See [Batch generate](#batch-generate)
 - **FrameGate** and **full-resolution escalation** — see [Scanning](#scanning)
 - **Deep links** — `geo:`, `tel:`, `sms:` and `mailto:` are instructions
   rather than addresses, so each gets its own result type and its own action
@@ -144,7 +146,7 @@ in scope is already pinned the same button becomes an unpin.
 | 5 | Result — Wi-Fi | SSID, revealable password, join action |
 | 6 | History | Stats, filters, search, favourites, bulk and per-type bulk actions |
 | 7 | History — empty | First-run state with suggestions |
-| 8 | Create | Live preview, four content types, styling, PNG export |
+| 8 | Create | Live preview, four content types, styling, PNG export, batch generate |
 | 9 | Settings | Scanner, appearance, storage, permissions, about |
 | 10 | What's new | Release history, read from `ReleaseNotes` |
 
@@ -176,7 +178,7 @@ Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore 
 The GitHub Actions workflow in `.github/workflows/android.yml` is the build. Every push to `main` and every pull request runs:
 
 - unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`, `Zoom`, `SelectionScope`, `RepeatGate`, `DeepLinkParser`,
-  `FinderPatternScan`)
+  `FinderPatternScan`, `QrContactSheet`, `BatchPayloads`)
 - `lintDebug`
 - `assembleDebug`
 
@@ -274,6 +276,50 @@ wrong: five seconds outlives the repository's three-second dedupe window,
 so holding one code for six seconds wrote a second history row for it.
 That is the kind of bug that only shows up in a feature nobody has used
 yet, which is why the window is now shorter than the dedupe it sits on.
+
+## Batch generate
+
+Paste a list, one line per code, and get them all on one printable sheet. It is
+reachable from Create, under the save button.
+
+One image is the right output shape for a batch: it can be shared in a single
+action, printed on one page, and pinned to a wall. Ten separate PNGs would be
+easier to generate and impossible to hand to anyone.
+
+`QrContactSheet` is arithmetic — how many columns, how wide, where each code
+goes — with no pixels, no ZXing and no Android, so the grid can be checked
+without rendering anything. `BatchPayloads` decides what each line becomes.
+The sheet is capped at 60 codes; past that it stops being a sheet anyone wants
+and starts being a bitmap nobody can open.
+
+Three decisions worth naming:
+
+- **One image, not many.** See above.
+- **Schemes are never touched.** `geo:`, `mailto:`, `tel:`, `sms:` and `WIFI:`
+  survive verbatim; only a bare `example.com` gains `https://`. Prefixing those
+  would change what the code *means*, which is the one thing a code generator
+  must not do. The test is for a scheme, not for a leading `http`.
+- **Duplicates collapse.** Two identical codes on one poster is a mistake, not
+  a request, and the count line says how many were dropped rather than leaving
+  a sheet with fewer codes than lines pasted.
+
+Two things are left out on purpose. Generated codes are **not** written to
+history — a batch is an export, and recording sixty scans would bury a real
+one. And the sheet is always light: a code on a dark background does not scan,
+so a dark-mode preview must not produce a dark poster.
+
+`QrBatchRenderer` renders each code through `QrRenderer` one at a time and
+blits it, rather than sharing a canvas. `QrRenderer.draw` fills the canvas with
+the style background, which on a sheet would paint over everything already
+there. That costs one small bitmap at a time, about 0.9MB and immediately
+collectable, and buys an exact match with the single-code export.
+
+`tools/check_batch.py` mirrors the layout and the payload rules and replays
+every case in `QrContactSheetTest` and `BatchPayloadsTest`. Dropping the scheme
+check, flooring the row count instead of rounding up, removing the dedupe,
+forgetting the cap, or sizing the cell without room for its caption each make
+it fail. The caption check was added because the other layout tests all passed
+against a cell that clipped every label.
 
 ## Decode confidence
 
@@ -391,8 +437,9 @@ Worth knowing before trusting any of this on a device.
   unit tests, but the most recent features — PNG export, the style panel,
   What's new, favourites, bulk actions, per-type bulk actions, launcher
   shortcuts, Geist, camera zoom, continuous mode, deep links, the clipboard
-  policy, decode confidence and the scanning budget — have not been seen on a
-  screen, because no phone was connected while they were written.
+  policy, decode confidence, batch generate and the scanning budget — have not
+  been seen on a screen, because no phone was connected while they were
+  written.
 - **Live auto-detection is unconfirmed** on real hardware. The shutter
   path, which uses the same decoder, is proven: it reads a photographed
   QR end to end. The live path additionally goes through `FrameGate`,

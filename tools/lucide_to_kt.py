@@ -284,6 +284,8 @@ ICON_NAMES = [
     "square-check", "x", "bookmark-check",
     # Deep-link result types: a place, a phone number, a message, an email.
     "map-pin", "phone", "message-square",
+    # Batch generate: a sheet is a grid, not a list.
+    "layout-grid",
 ]
 
 

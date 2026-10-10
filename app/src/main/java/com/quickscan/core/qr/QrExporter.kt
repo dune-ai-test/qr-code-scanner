@@ -24,9 +24,18 @@ object QrExporter {
     private const val SHARE_DIR = "shared-qr"
     private const val FILE_NAME = "quick-scan-code.png"
 
-    /** Writes the bitmap into the gallery and returns its MediaStore URI. */
-    fun saveToGallery(context: Context, bitmap: Bitmap): Result<Uri> = runCatching {
-        val name = "QuickScan ${System.currentTimeMillis()}.png"
+    /**
+     * Writes the bitmap into the gallery and returns its MediaStore URI.
+     *
+     * [label] only shapes the file name; a sheet of many wants to be called
+     * something other than "code" when it is sitting among them in a gallery.
+     */
+    fun saveToGallery(
+        context: Context,
+        bitmap: Bitmap,
+        label: String = "code",
+    ): Result<Uri> = runCatching {
+        val name = "QuickScan $label ${System.currentTimeMillis()}.png"
         val values = ContentValues().apply {
             put(MediaStore.Images.Media.DISPLAY_NAME, name)
             put(MediaStore.Images.Media.MIME_TYPE, MIME)
