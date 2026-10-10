@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quickscan.R
+import com.quickscan.core.qr.QrStyleCodec
+import com.quickscan.core.qr.QrStyle
 import com.quickscan.core.ui.ScanDates
 import com.quickscan.core.ui.headline
 import com.quickscan.core.ui.labelRes
@@ -136,10 +138,15 @@ fun ResultScreen(
                 .padding(horizontal = Space.x2xl),
             verticalArrangement = Arrangement.spacedBy(Space.x2xl),
         ) {
+            // Scanned codes carry no style and render plain; created ones
+            // come back exactly as they were styled.
+            val style = QrStyleCodec.decode(entity.qrStyle)
+
             when (payload) {
                 is ScannedPayload.Url -> UrlHero(
                     raw = payload.raw,
                     scannedAt = entity.createdAt,
+                    style = style,
                 )
 
                 is ScannedPayload.Wifi -> WifiHero(
@@ -207,6 +214,7 @@ fun ResultScreen(
 private fun UrlHero(
     raw: String,
     scannedAt: Long,
+    style: QrStyle,
 ) {
     val palette = QsTheme.palette
     val text = QsTheme.text
@@ -233,8 +241,7 @@ private fun UrlHero(
                 ) {
                     QrCodeView(
                         content = raw,
-                        foreground = palette.ink,
-                        background = palette.surfaceElevated,
+                        style = style,
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

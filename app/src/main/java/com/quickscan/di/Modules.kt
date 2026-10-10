@@ -23,6 +23,7 @@ object StorageModule {
     @Singleton
     fun provideDatabase(@ApplicationContext context: Context): QuickScanDatabase =
         Room.databaseBuilder(context, QuickScanDatabase::class.java, QuickScanDatabase.NAME)
+            .addMigrations(QuickScanDatabase.MIGRATION_1_2)
             .fallbackToDestructiveMigration()
             .build()
 

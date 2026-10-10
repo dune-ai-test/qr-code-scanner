@@ -67,7 +67,7 @@ import com.quickscan.core.ui.component.QSSecondaryButton
 import com.quickscan.core.ui.component.QSSwitch
 import com.quickscan.core.ui.component.QSTextField
 import com.quickscan.core.ui.component.QrPlaceholderView
-import com.quickscan.core.ui.component.QrStyledView
+import com.quickscan.core.ui.component.QrCodeView
 import com.quickscan.core.ui.component.StatusBarSpacer
 import com.quickscan.core.ui.component.QSTabBar
 import com.quickscan.core.ui.component.tabBarClearance
@@ -404,8 +404,10 @@ private fun PreviewCard(payload: String, caption: String, style: QrStyle) {
                     modifier = Modifier.fillMaxSize(),
                 )
             } else {
-                QrStyledView(
-                    payload = payload,
+                QrCodeView(
+                    content = payload,
+                    // The card follows the theme; the code stays light so it
+                    // can actually be scanned off the screen.
                     style = style.copy(background = Color.White.toArgb()),
                     modifier = Modifier.fillMaxSize(),
                 )

@@ -1,5 +1,7 @@
 package com.quickscan.data.repository
 
+import com.quickscan.core.qr.QrStyle
+import com.quickscan.core.qr.QrStyleCodec
 import com.quickscan.data.barcode.PayloadParser
 import com.quickscan.data.barcode.PayloadType
 import com.quickscan.data.barcode.ScannedPayload
@@ -61,11 +63,15 @@ class ScanRepository(
      * Saves a scan unless the same payload was recorded moments ago, which is
      * what a code sitting in the camera frame would otherwise do dozens of
      * times per second. Returns the row id either way.
+     *
+     * [style] travels with the row so a created code renders the way it was
+     * made when it is opened again. Scans pass nothing and stay plain.
      */
     suspend fun record(
         payload: ScannedPayload,
         source: ScanSource,
         at: Long = now(),
+        style: QrStyle? = null,
     ): Long {
         dao.findRecent(payload.raw, at - DUPLICATE_WINDOW_MILLIS)?.let { return it.id }
         return dao.insert(
@@ -76,9 +82,13 @@ class ScanRepository(
                 subtitle = payload.displaySubtitle(),
                 createdAt = at,
                 source = source.name,
+                qrStyle = style?.let(QrStyleCodec::encode),
             ),
         )
     }
+
+    /** How a saved code was styled, or plain when it was never styled. */
+    fun styleOf(entity: ScanEntity): QrStyle = QrStyleCodec.decode(entity.qrStyle)
 
     suspend fun delete(id: Long) = dao.deleteById(id)
 

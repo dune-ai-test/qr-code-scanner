@@ -36,4 +36,13 @@ data class ScanEntity(
 
     @ColumnInfo(name = "isPinned")
     val isPinned: Boolean = false,
+
+    /**
+     * How this code was styled when it was made, via `QrStyleCodec`. Null for
+     * anything scanned, which is exactly right: a scanned code was never
+     * styled, so it renders plain rather than inheriting whatever the creator's
+     * palette last happened to be.
+     */
+    @ColumnInfo(name = "qrStyle")
+    val qrStyle: String? = null,
 )

@@ -1,40 +1,45 @@
 package com.quickscan.core.ui.component
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.ui.graphics.nativeCanvas
-import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.quickscan.core.qr.QrEncoder
 import com.quickscan.core.qr.QrRenderer
 import com.quickscan.core.qr.QrStyle
 import com.quickscan.core.qr.QrPlaceholder
-import com.google.zxing.common.BitMatrix
 
 /**
- * A real, scannable QR code for [content]. The matrix is cached per content, so
- * recomposition does not re-run the encoder.
+ * The one place a QR code is drawn on screen.
+ *
+ * A code takes a [QrStyle] rather than two colours because the style is part
+ * of the code: a saved one has to render the way it was made, and the card
+ * behind it — not the code — is what follows the theme.
+ *
+ * The matrix is cached per payload and style, so recomposition does not re-run
+ * the encoder.
  */
 @Composable
 fun QrCodeView(
     content: String,
     modifier: Modifier = Modifier,
-    foreground: Color,
-    background: Color,
-    quietZone: Int = 2,
+    style: QrStyle = QrStyle.DEFAULT,
 ) {
-    val matrix = remember(content, quietZone) { QrEncoder.encode(content, quietZone) }
+    val matrix = remember(content, style) { QrRenderer.encode(content, style) }
     Canvas(modifier) {
-        drawRect(background)
-        matrix?.let { drawMatrix(it, foreground) }
+        val encoded = matrix ?: return@Canvas
+        QrRenderer.draw(
+            drawContext.canvas.nativeCanvas,
+            encoded,
+            style,
+            size.width.toInt(),
+        )
     }
 }
 
@@ -61,29 +66,6 @@ fun QrPlaceholderView(
                 )
             }
         }
-    }
-}
-
-/**
- * A QR rendered with the creator's styling: coloured modules, rounded corners
- * and an optional logo. Uses the same renderer as the PNG export, so what the
- * preview shows is what gets shared.
- */
-@Composable
-fun QrStyledView(
-    payload: String,
-    style: QrStyle,
-    modifier: Modifier = Modifier,
-) {
-    val matrix = remember(payload, style.logo) { QrRenderer.encode(payload, style) }
-    Canvas(modifier) {
-        val m = matrix ?: return@Canvas
-        QrRenderer.draw(
-            drawContext.canvas.nativeCanvas,
-            m,
-            style,
-            size.width.toInt(),
-        )
     }
 }
 
@@ -115,49 +97,4 @@ fun QrCornerBrackets(
         drawLine(color, Offset(w - arm, h), Offset(w, h), strokeWidth.toPx(), StrokeCap.Round)
         drawLine(color, Offset(w, h), Offset(w, h - arm), strokeWidth.toPx(), StrokeCap.Round)
     }
-}
-
-private fun DrawScope.drawMatrix(matrix: BitMatrix, color: Color) {
-    val cell = size.minDimension / matrix.width
-    for (y in 0 until matrix.height) {
-        var segmentStart = -1
-        for (x in 0 until matrix.width) {
-            val on = matrix[x, y]
-            if (on && segmentStart < 0) segmentStart = x
-            if (!on && segmentStart >= 0) {
-                drawRect(
-                    color = color,
-                    topLeft = Offset(segmentStart * cell, y * cell),
-                    size = Size((x - segmentStart) * cell, cell),
-                )
-                segmentStart = -1
-            }
-        }
-        if (segmentStart >= 0) {
-            drawRect(
-                color = color,
-                topLeft = Offset(segmentStart * cell, y * cell),
-                size = Size((matrix.width - segmentStart) * cell, cell),
-            )
-        }
-    }
-}
-
-/** Convenience wrapper that pins a real QR code to a fixed edge length. */
-@Composable
-fun SquareQr(
-    edge: Dp,
-    content: String,
-    modifier: Modifier = Modifier,
-    foreground: Color,
-    background: Color,
-    quietZone: Int = 2,
-) {
-    QrCodeView(
-        content = content,
-        modifier = modifier.size(edge),
-        foreground = foreground,
-        background = background,
-        quietZone = quietZone,
-    )
 }

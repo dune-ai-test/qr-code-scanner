@@ -149,7 +149,13 @@ class CreateViewModel @Inject constructor(
         _state.update { it.copy(saving = true) }
         viewModelScope.launch {
             val parsed = PayloadParser.parse(snapshot.payload)
-            scanRepository.record(parsed, ScanSource.Manual)
+            // The style is stored with the row so the reopened code looks
+            // like this preview rather than like a plain one.
+            scanRepository.record(
+                payload = parsed,
+                source = ScanSource.Manual,
+                style = snapshot.style,
+            )
             _state.update { it.copy(saving = false) }
             _events.send(CreateEvent.Saved(snapshot.payload))
         }

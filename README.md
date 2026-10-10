@@ -157,7 +157,7 @@ deep-link types each get their own action set rather than a URL-shaped one.
 
 ```
 com.quickscan
-├── core/qr          QrPlaceholder (seeded 25x25 generator), QrEncoder (ZXing)
+├── core/qr          QrPlaceholder (seeded 25x25 generator), QrRenderer
 ├── core/ui          theme tokens, shared components, payload presentation
 ├── data/barcode     ZxingDecoder, LumaRotation, FrameGate, PayloadParser
 ├── data/local       Room entities/DAO, DataStore preferences
@@ -178,7 +178,7 @@ Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore 
 The GitHub Actions workflow in `.github/workflows/android.yml` is the build. Every push to `main` and every pull request runs:
 
 - unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`, `Zoom`, `SelectionScope`, `RepeatGate`, `DeepLinkParser`,
-  `FinderPatternScan`, `QrContactSheet`, `BatchPayloads`)
+  `FinderPatternScan`, `QrContactSheet`, `BatchPayloads`, `QrStyleCodec`)
 - `lintDebug`
 - `assembleDebug`
 
@@ -423,11 +423,49 @@ holds what we put there, so a later copy is never wiped.
 Looping animations read the system animation scale and hold still when
 animations are switched off.
 
+## One renderer
+
+There used to be three ways to draw a QR code in this app. `QrEncoder`
+rasterised a matrix into a bitmap. A Compose path walked the matrix and painted
+square modules in the theme's colours — that was the viewing path, and in dark
+mode it painted a light code on a dark card, which most scanners cannot read.
+And `QrRenderer` did the creator's styled version. So a code looked one way in
+the Create preview and another the moment it was reopened, and the style the
+user had chosen was thrown away at the moment of saving.
+
+Everything now goes through `QrRenderer`, and a saved code carries its style
+with it:
+
+- `QrStyleCodec` stores a style as one nullable text column,
+  `#AARRGGBB,#AARRGGBB,radius,logo`. One column rather than four, and `null`
+  answers a question four columns could not: *was this code styled at all?*
+  A scanned code was not, and should render plain rather than inherit whatever
+  the creator's palette last happened to be.
+- `ScanRepository.record` takes the style and stores it. The Create screen
+  passes its own; every scan path passes nothing.
+- The result screen reads it back. `QrCodeView` takes a style rather than two
+  colours, because the code is not the thing that follows the theme — the card
+  around it is.
+- Decoding is forgiving on purpose. A style is decoration: anything unreadable
+  falls back to plain rather than failing to open a code the user can still
+  see, and an out-of-range corner radius is clamped rather than discarding a
+  perfectly good colour.
+
+Room goes to version 2 with an explicit migration for the added column. The
+builder also falls back to a destructive migration, so without it the app would
+quietly delete every scan the user has made, just to add a nullable one.
+
+`tools/check_style.py` mirrors the codec. Removing the guard around hex
+parsing, forgetting that an eight-digit colour carries alpha, dropping the
+radius clamp or making the logo match case-sensitive each make it fail. The
+first of those was a real crash, found by the Kotlin test before the mirror
+existed.
+
 ## Procedural QR artwork
 
 Screens that show a code without carrying real content (the onboarding hero, the scanner's permission state) use `QrPlaceholder`, a deterministic generator seeded by a long. It emits a true module grid — three 7×7 finder patterns with separators, row/column-6 timing lines, the spec-derived alignment block, the always-dark module and reserved format-information areas — with the data area filled from a seeded LCG. The same seed always paints the same code, and each call site picks its own seed.
 
-Everywhere real data appears, `QrCodeView` renders an actual ZXing `BitMatrix`, so the code on screen is scannable.
+Everywhere real data appears, `QrCodeView` renders an actual ZXing `BitMatrix` through the same renderer as the export, so the code on screen is scannable and is the same code that gets shared.
 
 ## Status
 
@@ -437,9 +475,9 @@ Worth knowing before trusting any of this on a device.
   unit tests, but the most recent features — PNG export, the style panel,
   What's new, favourites, bulk actions, per-type bulk actions, launcher
   shortcuts, Geist, camera zoom, continuous mode, deep links, the clipboard
-  policy, decode confidence, batch generate and the scanning budget — have not
-  been seen on a screen, because no phone was connected while they were
-  written.
+  policy, decode confidence, batch generate, the unified renderer and the scanning
+  budget — have not been seen on a screen, because no phone was connected
+  while they were written.
 - **Live auto-detection is unconfirmed** on real hardware. The shutter
   path, which uses the same decoder, is proven: it reads a photographed
   QR end to end. The live path additionally goes through `FrameGate`,
