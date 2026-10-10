@@ -188,7 +188,13 @@
     <string name="setting_dark_mode">Dark mode</string>
     <string name="setting_accent">Accent colour</string>
     <string name="setting_larger_text">Larger text</string>
-    <string name="setting_retention">Keep history for %1$d days</string>
+    <string name="setting_retention">Keep history for %1$s</string>
+    <string name="retention_week">7 days</string>
+    <string name="retention_month">30 days</string>
+    <string name="retention_three_months">90 days</string>
+    <string name="retention_year">1 year</string>
+    <string name="retention_always">Always</string>
+    <string name="setting_retention_title">Keep history for</string>
     <string name="setting_retention_forever">Keep history forever</string>
     <string name="retention_days">%1$d days</string>
     <string name="retention_day">1 day</string>

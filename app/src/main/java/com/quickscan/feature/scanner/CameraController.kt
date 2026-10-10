@@ -1,6 +1,7 @@
 package com.quickscan.feature.scanner
 
 import android.content.Context
+import android.os.SystemClock
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.TorchState
@@ -18,7 +19,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import com.quickscan.data.barcode.DecodedCode
 import com.quickscan.core.qr.DecodeImages
+import com.quickscan.data.barcode.FrameGate
 import com.quickscan.data.barcode.ZxingDecoder
+import java.nio.ByteBuffer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -59,6 +62,13 @@ class CameraController(
     private var lensFacing: Int = CameraSelector.LENS_FACING_BACK
     private var preferFront: Boolean = false
     private val decoding = AtomicBoolean(false)
+
+    /**
+     * Cuts the per-frame cost. Decoding every frame of a 720p stream is most
+     * of a megapixel of work thirty times a second for a viewfinder that is
+     * usually still.
+     */
+    private val frameGate = FrameGate()
 
     @Volatile
     private var paused: Boolean = false
@@ -196,10 +206,81 @@ class CameraController(
             return
         }
         try {
-            decoder.decode(image)?.let(onCode)
+            val now = SystemClock.elapsedRealtime()
+            val plane = image.planes[0]
+            val sample = peekSample(plane.buffer, plane.rowStride, width = image.width)
+
+            if (!frameGate.shouldDecode(sample.data, sample.offset, sample.step, now)) {
+                return
+            }
+
+            val code = decoder.decode(image)
+            if (code != null) {
+                frameGate.onDecoded()
+                onCode(code)
+                return
+            }
+
+            // The viewfinder is busy but the low-resolution stream has read
+            // nothing: spend one full-resolution still on it, which is what
+            // finds a small or distant code.
+            if (frameGate.shouldCaptureFullRes(now)) {
+                escalateToFullResolution()
+            }
         } finally {
             decoding.set(false)
             image.close()
+        }
+    }
+
+    /** A cheap signature over a sparse slice of the plane, without copying it. */
+    private fun peekSample(
+        buffer: ByteBuffer,
+        rowStride: Int,
+        width: Int,
+    ): Sample {
+        val step = maxOf(1, width / 16)
+        val cap = 4096
+        val out = ByteArray(minOf(cap, maxOf(1, buffer.remaining() / step)))
+        val duplicate = buffer.duplicate()
+        var read = 0
+        var index = 0
+        while (read < out.size && index < buffer.limit()) {
+            out[index++] = duplicate.get(index)
+            index += step
+        }
+        return Sample(out, 0, step)
+    }
+
+    private class Sample(val data: ByteArray, val offset: Int, val step: Int)
+
+    private fun escalateToFullResolution() {
+        val captureUseCase = imageCapture ?: return
+        // The live analyser must not fight the still for the executor.
+        paused = true
+        try {
+            captureUseCase.takePicture(
+                analysisExecutor,
+                object : ImageCapture.OnImageCapturedCallback() {
+                    override fun onCaptureSuccess(image: ImageProxy) {
+                        val code = try {
+                            image.use { DecodeImages.fromCapture(it)?.let(decoder::decode) }
+                        } catch (_: Throwable) {
+                            null
+                        }
+                        if (code != null) {
+                            frameGate.onDecoded()
+                            onCode(code)
+                        }
+                    }
+
+                    override fun onError(exception: ImageCaptureException) = Unit
+                },
+            )
+        } catch (_: Throwable) {
+            // Nothing to do; the live path keeps trying.
+        } finally {
+            if (autoDetect) paused = false
         }
     }
 

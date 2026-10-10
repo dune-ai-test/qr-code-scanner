@@ -55,9 +55,9 @@ class ZxingDecoder {
         }
 
         val degrees = image.imageInfo.rotationDegrees
-        val rotated = rotate(packed, rowStride, width, height, degrees)
-        val outWidth = if (degrees % 180 == 0) width else height
-        val outHeight = if (degrees % 180 == 0) height else width
+        val rotated = LumaRotation.rotate(packed, rowStride, width, height, degrees)
+        val (outWidth, outHeight) =
+            LumaRotation.sizeAfterRotation(width, height, degrees)
 
         // Decode the centre square the reticle covers. It is a fraction of the
         // frame, so this is both faster and more forgiving of a code that only
@@ -68,7 +68,14 @@ class ZxingDecoder {
 
         return decodeRegion(rotated, outWidth, outHeight, left, top, side)
             // Light-on-dark codes are common on printed labels and screens.
-            ?: decodeRegion(invert(rotated), outWidth, outHeight, left, top, side)
+            ?: decodeRegion(
+                LumaRotation.invert(rotated),
+                outWidth,
+                outHeight,
+                left,
+                top,
+                side,
+            )
             // A code near the edge of the frame is missed by the centre crop.
             ?: decodeLuminance(rotated, outWidth, outHeight)
     }
@@ -128,60 +135,6 @@ class ZxingDecoder {
         text = text,
         formatName = barcodeFormat.name,
     )
-
-    /** Rotates a row-stride luminance buffer into a tightly packed one. */
-    private fun rotate(
-        src: ByteArray,
-        rowStride: Int,
-        width: Int,
-        height: Int,
-        degrees: Int,
-    ): ByteArray = when (((degrees % 360) + 360) % 360) {
-        0 -> tighten(src, rowStride, width, height)
-        90 -> rotate90(src, rowStride, width, height)
-        180 -> rotate180(tighten(src, rowStride, width, height), width, height)
-        else -> rotate270(src, rowStride, width, height)
-    }
-
-    private fun tighten(src: ByteArray, rowStride: Int, width: Int, height: Int): ByteArray =
-        ByteArray(width * height).also { out ->
-            for (y in 0 until height) {
-                System.arraycopy(src, y * rowStride, out, y * width, width)
-            }
-        }
-
-    private fun rotate90(src: ByteArray, rowStride: Int, width: Int, height: Int): ByteArray {
-        val out = ByteArray(width * height)
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                out[x * height + (height - 1 - y)] = src[y * rowStride + x]
-            }
-        }
-        return out
-    }
-
-    private fun rotate180(src: ByteArray, width: Int, height: Int): ByteArray {
-        val out = ByteArray(width * height)
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                out[(height - 1 - y) * width + (width - 1 - x)] = src[y * width + x]
-            }
-        }
-        return out
-    }
-
-    private fun rotate270(src: ByteArray, rowStride: Int, width: Int, height: Int): ByteArray {
-        val out = ByteArray(width * height)
-        for (y in 0 until height) {
-            for (x in 0 until width) {
-                out[(width - 1 - x) * height + y] = src[y * rowStride + x]
-            }
-        }
-        return out
-    }
-
-    private fun invert(src: ByteArray): ByteArray =
-        ByteArray(src.size) { i -> (255 - (src[i].toInt() and 0xFF)).toByte() }
 
     private companion object {
         /** Share of the short edge the reticle covers. */

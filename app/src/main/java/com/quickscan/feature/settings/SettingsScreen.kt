@@ -91,6 +91,7 @@ fun SettingsScreen(
     val palette = QsTheme.palette
 
     var confirmClear by remember { mutableStateOf(false) }
+    var showRetention by remember { mutableStateOf(false) }
 
     val cameraLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission(),
@@ -220,17 +221,12 @@ fun SettingsScreen(
             SettingsGroup {
                 QSSettingRow(
                     icon = LucideBookmark,
-                    title = if (state.retentionDays > 0) {
-                        stringResource(R.string.setting_retention, state.retentionDays)
-                    } else {
-                        stringResource(R.string.setting_retention_forever)
-                    },
+                    title = stringResource(
+                        R.string.setting_retention,
+                        retentionLabel(state.retentionDays),
+                    ),
                     background = palette.surface,
-                    onClick = {
-                        viewModel.setRetentionDays(
-                            if (state.retentionDays >= 90) 7 else state.retentionDays + 30,
-                        )
-                    },
+                    onClick = { showRetention = true },
                     trailing = {
                         QSValueSlot(value = retentionLabel(state.retentionDays))
                     },
@@ -368,6 +364,14 @@ fun SettingsScreen(
         modifier = Modifier.align(Alignment.BottomCenter),
     )
 
+    if (showRetention) {
+        RetentionSheet(
+            current = state.retentionDays,
+            onPick = viewModel::setRetentionDays,
+            onDismiss = { showRetention = false },
+        )
+    }
+
     if (confirmClear) {
         AlertDialog(
             onDismissRequest = { confirmClear = false },
@@ -503,9 +507,12 @@ private fun GroupDivider() {
 
 
 @Composable
-private fun retentionLabel(days: Int): String = when {
-    days <= 0 -> stringResource(R.string.retention_forever)
-    days == 1 -> stringResource(R.string.retention_day)
+private fun retentionLabel(days: Int): String = when (days) {
+    7 -> stringResource(R.string.retention_week)
+    30 -> stringResource(R.string.retention_month)
+    90 -> stringResource(R.string.retention_three_months)
+    365 -> stringResource(R.string.retention_year)
+    0 -> stringResource(R.string.retention_always)
     else -> stringResource(R.string.retention_days, days)
 }
 
