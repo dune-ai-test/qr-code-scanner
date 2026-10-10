@@ -245,7 +245,13 @@ fun HistoryScreen(
                                     pinned = true,
                                     selected = scan.id in state.selection,
                                     selecting = state.isSelecting,
-                                    onTap = { viewModel.onRowTap(scan.id) },
+                                    onTap = {
+                                        if (state.isSelecting) {
+                                            viewModel.onRowTap(scan.id)
+                                        } else {
+                                            onOpenScan(scan.id)
+                                        }
+                                    },
                                     onLongPress = { viewModel.onRowLongPress(scan.id) },
                                 )
                             }
@@ -271,7 +277,13 @@ fun HistoryScreen(
                                     pinned = false,
                                     selected = scan.id in state.selection,
                                     selecting = state.isSelecting,
-                                    onTap = { viewModel.onRowTap(scan.id) },
+                                    onTap = {
+                                        if (state.isSelecting) {
+                                            viewModel.onRowTap(scan.id)
+                                        } else {
+                                            onOpenScan(scan.id)
+                                        }
+                                    },
                                     onLongPress = { viewModel.onRowLongPress(scan.id) },
                                 )
                             }
@@ -712,6 +724,7 @@ private fun EmptyHistory(
         }
 
         Spacer(Modifier.height(Space.x2xl))
+        Spacer(Modifier.height(tabBarClearance()))
     }
 }
 

@@ -44,6 +44,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.quickscan.core.ui.theme.Metrics
@@ -96,6 +97,7 @@ fun QSPrimaryButton(
             style = text.body15.copy(fontWeight = FontWeight.SemiBold),
             color = if (enabled) content else palette.inkFaint,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -126,6 +128,7 @@ fun QSSecondaryButton(
             style = text.body15.copy(fontWeight = FontWeight.SemiBold),
             color = if (enabled) ink else palette.inkFaint,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
@@ -234,6 +237,7 @@ fun QSChip(
             ),
             color = if (selected) palette.bg else palette.inkMuted,
             maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }

@@ -146,7 +146,7 @@
     <string name="suggestion_wifi_title">Wi-Fi passwords</string>
     <string name="suggestion_wifi_subtitle">Join a network in one tap</string>
     <string name="suggestion_link_title">Website links</string>
-    <string name="suggestion_link_subtitle">Open instantly, safely checked</string>
+    <string name="suggestion_link_subtitle">Open straight from the result</string>
     <string name="suggestion_contact_title">Contact cards</string>
     <string name="suggestion_contact_subtitle">Save straight to your address book</string>
     <string name="empty_search_title">No matches</string>
@@ -210,7 +210,7 @@ WIFI:T:WPA;S:Home;P:secret;;</string>
     <string name="batch_clear">Clear the list</string>
     <string name="batch_sheet_desc">The generated sheet of codes</string>
     <string name="batch_sheet_size">%1$d codes · %2$d × %3$d px</string>
-    <string name="save_qr_to_gallery">Save to Photos</string>
+    <string name="save_qr_to_gallery">Save image</string>
     <string name="share_qr_image">Share image</string>
     <string name="share_qr_chooser">Share QR code image</string>
     <string name="qr_image_saved">Image saved to Photos</string>

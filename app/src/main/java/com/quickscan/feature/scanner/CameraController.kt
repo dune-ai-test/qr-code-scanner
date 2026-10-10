@@ -360,7 +360,17 @@ class CameraController(
         return FinderPatternScan.scan(rows, width)
     }
 
-    /** A cheap signature over a sparse slice of the plane, without copying it. */
+    /**
+     * A cheap signature over a sparse slice of the plane, without copying it.
+     *
+     * The plane is walked with a [step] stride while the result is compacted,
+     * so the two counters advance at different rates. Driving the write index
+     * and the loop bound from the same counter overruns the array on any
+     * 1280-wide frame, which is every frame this app sees.
+     *
+     * The sample is sized from how many strided reads actually fit, so the
+     * loop always fills it and [FrameGate] hashes a fully-written array.
+     */
     private fun peekSample(
         buffer: ByteBuffer,
         rowStride: Int,
@@ -368,12 +378,14 @@ class CameraController(
     ): Sample {
         val step = maxOf(1, width / 16)
         val cap = 4096
-        val out = ByteArray(minOf(cap, maxOf(1, buffer.remaining() / step)))
+        val limit = buffer.limit()
+        val available = (limit + step - 1) / step
+        val out = ByteArray(minOf(cap, maxOf(1, available)))
         val duplicate = buffer.duplicate()
-        var read = 0
+        var written = 0
         var index = 0
-        while (read < out.size && index < buffer.limit()) {
-            out[index++] = duplicate.get(index)
+        while (written < out.size && index < limit) {
+            out[written++] = duplicate.get(index)
             index += step
         }
         return Sample(out, 0, step)

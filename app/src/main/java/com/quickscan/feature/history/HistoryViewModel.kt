@@ -53,7 +53,13 @@ data class HistoryUiState(
 ) {
     val isSelecting: Boolean get() = selection.isNotEmpty()
     val isEmpty: Boolean get() = groups.isEmpty() && totalUnfiltered == 0
-    val hasNoMatches: Boolean get() = groups.isEmpty() && totalUnfiltered > 0
+    /**
+     * Only when something is actually narrowing. A row that moves to
+     * FAVOURITES empties [groups] too, and that is not a failed search.
+     */
+    val hasNoMatches: Boolean
+        get() = groups.isEmpty() && totalUnfiltered > 0 &&
+            (filter != ScanFilter.All || query.isNotBlank())
 
     /**
      * True when every row in scope is pinned, which turns the pin action into
