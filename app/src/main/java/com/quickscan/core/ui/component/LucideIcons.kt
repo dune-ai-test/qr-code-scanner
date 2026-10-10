@@ -872,3 +872,51 @@ val LucideBookmarkCheck = lucide("BookmarkCheck") {
     lineTo(11f, 12f)
     lineTo(15f, 8f)
 }
+
+
+val LucideMapPin = lucide("MapPin") {
+    moveTo(20f, 10f)
+    curveTo(20f, 14.993f, 14.461f, 20.193f, 12.601f, 21.799f)
+    arcTo(1f, 1f, 0f, false, true, 11.399f, 21.799f)
+    curveTo(9.539f, 20.193f, 4f, 14.993f, 4f, 10f)
+    arcTo(8f, 8f, 0f, false, true, 20f, 10f)
+    moveTo(9f, 10f)
+    arcTo(3f, 3f, 0f, true, false, 15f, 10f)
+    arcTo(3f, 3f, 0f, true, false, 9f, 10f)
+}
+
+
+val LucidePhone = lucide("Phone") {
+    moveTo(13.832f, 16.568f)
+    arcTo(1f, 1f, 0f, false, false, 15.045f, 16.265f)
+    lineTo(15.4f, 15.8f)
+    arcTo(2f, 2f, 0f, false, true, 17f, 15f)
+    horizontalLineTo(20f)
+    arcTo(2f, 2f, 0f, false, true, 22f, 17f)
+    verticalLineTo(20f)
+    arcTo(2f, 2f, 0f, false, true, 20f, 22f)
+    arcTo(18f, 18f, 0f, false, true, 2f, 4f)
+    arcTo(2f, 2f, 0f, false, true, 4f, 2f)
+    horizontalLineTo(7f)
+    arcTo(2f, 2f, 0f, false, true, 9f, 4f)
+    verticalLineTo(7f)
+    arcTo(2f, 2f, 0f, false, true, 8.2f, 8.6f)
+    lineTo(7.732f, 8.951f)
+    arcTo(1f, 1f, 0f, false, false, 7.44f, 10.184f)
+    arcTo(14f, 14f, 0f, false, false, 13.832f, 16.568f)
+}
+
+
+val LucideMessageSquare = lucide("MessageSquare") {
+    moveTo(22f, 17f)
+    arcTo(2f, 2f, 0f, false, true, 20f, 19f)
+    horizontalLineTo(6.828f)
+    arcTo(2f, 2f, 0f, false, false, 5.414f, 19.586f)
+    lineTo(3.212f, 21.788f)
+    arcTo(0.71f, 0.71f, 0f, false, true, 2f, 21.286f)
+    verticalLineTo(5f)
+    arcTo(2f, 2f, 0f, false, true, 4f, 3f)
+    horizontalLineTo(20f)
+    arcTo(2f, 2f, 0f, false, true, 22f, 5f)
+    close()
+}

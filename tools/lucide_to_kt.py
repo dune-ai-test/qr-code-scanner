@@ -282,6 +282,8 @@ ICON_NAMES = [
     # Added later for selection controls; Lucide spells these square-check,
     # x and bookmark-check, not check-square or bookmark-check-alt.
     "square-check", "x", "bookmark-check",
+    # Deep-link result types: a place, a phone number, a message, an email.
+    "map-pin", "phone", "message-square",
 ]
 
 

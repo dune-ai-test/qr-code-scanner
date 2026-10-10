@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.quickscan.data.barcode.DecodedCode
 import com.quickscan.data.barcode.PayloadParser
 import com.quickscan.data.barcode.PayloadType
+import com.quickscan.data.barcode.ScannedPayload
 import com.quickscan.data.barcode.ZxingDecoder
 import com.quickscan.core.ui.toastLabel
 import com.quickscan.data.local.ScanEntity
@@ -159,6 +160,19 @@ class ScannerViewModel @Inject constructor(
             }
             return
         }
+        // Anything the parser already recognises is an instruction, not an address.
+// Anything the parser already recognises is an instruction, not an
+        // address. Without this, pasting `geo:51.5,-0.12` becomes
+        // `https://geo:51.5,-0.12`, which is a malformed URL and fails the
+        // host check below — so a pasted Wi-Fi or deep link used to die as
+        // "not a valid link".
+        val recognised = PayloadParser.parse(text)
+        if (recognised !is ScannedPayload.Text) {
+            _state.update { it.copy(pasteOpen = false, pasteText = "") }
+            accept(DecodedCode(text, "QR_CODE"), ScanSource.Manual)
+            return
+        }
+
         val candidate = if (text.startsWith("http", ignoreCase = true)) text else "https://$text"
         val host = runCatching { java.net.URI(candidate).host }.getOrNull()
         if (host.isNullOrBlank()) {

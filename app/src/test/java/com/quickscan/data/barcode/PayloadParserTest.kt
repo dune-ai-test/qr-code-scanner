@@ -2,7 +2,6 @@ package com.quickscan.data.barcode
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -78,16 +77,38 @@ class PayloadParserTest {
     }
 
     @Test
-    fun `mailto becomes a Contact payload with only an email`() {
-        val contact = PayloadParser.parse("mailto:hi@example.com?subject=hi") as ScannedPayload.Contact
-        assertEquals("hi@example.com", contact.email)
-        assertNull(contact.phone)
+    fun `mailto becomes an Email payload rather than a contact`() {
+        // It used to land in Contact, which has no "send email" action: with
+        // no phone number that screen offered nothing but Share.
+        val email = PayloadParser.parse("mailto:hi@example.com?subject=hi") as ScannedPayload.Email
+        assertEquals("hi@example.com", email.address)
+        assertEquals("hi", email.subject)
     }
 
     @Test
-    fun `tel becomes a Contact payload with only a phone number`() {
-        val contact = PayloadParser.parse("tel:+15551234567") as ScannedPayload.Contact
-        assertEquals("+15551234567", contact.phone)
+    fun `tel becomes a Phone payload rather than a contact`() {
+        val phone = PayloadParser.parse("tel:+15551234567") as ScannedPayload.Phone
+        assertEquals("+15551234567", phone.number)
+    }
+
+    @Test
+    fun `geo becomes a Location`() {
+        val place = PayloadParser.parse("geo:51.5074,-0.1278?q=Egg") as ScannedPayload.Location
+        assertEquals(51.5074, place.latitude, 0.0001)
+        assertEquals("Egg", place.label)
+    }
+
+    @Test
+    fun `a malformed geo stays plain text`() {
+        assertEquals(PayloadType.Text, PayloadParser.parse("geo:nonsense").type)
+    }
+
+    @Test
+    fun `a vCard is still a Contact, not an Email`() {
+        val contact = PayloadParser.parse(
+            "BEGIN:VCARD\nFN:Marco Rossi\nTEL:+441632960001\nEND:VCARD",
+        )
+        assertTrue(contact is ScannedPayload.Contact)
     }
 
     @Test

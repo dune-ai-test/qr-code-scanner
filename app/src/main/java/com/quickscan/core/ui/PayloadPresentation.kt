@@ -6,6 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.quickscan.R
 import com.quickscan.core.ui.component.LucideLink
+import com.quickscan.core.ui.component.LucideMail
+import com.quickscan.core.ui.component.LucideMapPin
+import com.quickscan.core.ui.component.LucideMessageSquare
+import com.quickscan.core.ui.component.LucidePhone
 import com.quickscan.core.ui.component.LucideType
 import com.quickscan.core.ui.component.LucideUser
 import com.quickscan.core.ui.component.LucideWifi
@@ -25,6 +29,10 @@ val PayloadType.labelRes: Int
         PayloadType.Text -> R.string.type_text
         PayloadType.Contact -> R.string.type_contact
         PayloadType.Product -> R.string.type_product
+        PayloadType.Location -> R.string.type_location
+        PayloadType.Phone -> R.string.type_phone
+        PayloadType.Sms -> R.string.type_sms
+        PayloadType.Email -> R.string.type_email
     }
 
 val PayloadType.icon
@@ -34,6 +42,10 @@ val PayloadType.icon
         PayloadType.Text -> LucideType
         PayloadType.Contact -> LucideUser
         PayloadType.Product -> LucideType
+        PayloadType.Location -> LucideMapPin
+        PayloadType.Phone -> LucidePhone
+        PayloadType.Sms -> LucideMessageSquare
+        PayloadType.Email -> LucideMail
     }
 
 /**
@@ -58,6 +70,10 @@ val ScannedPayload.headline: String
         is ScannedPayload.Contact -> name.ifBlank { email ?: phone ?: "Contact" }
         is ScannedPayload.Product -> value
         is ScannedPayload.Text -> raw
+        is ScannedPayload.Location -> label ?: coordinates
+        is ScannedPayload.Phone -> number
+        is ScannedPayload.Sms -> number
+        is ScannedPayload.Email -> address
     }
 
 /**
@@ -72,6 +88,10 @@ val ScannedPayload.toastLabel: String
         is ScannedPayload.Contact -> name.ifBlank { email ?: phone ?: "" }
         is ScannedPayload.Product -> value
         is ScannedPayload.Text -> "${raw.length} characters"
+        is ScannedPayload.Location -> label ?: coordinates
+        is ScannedPayload.Phone -> number
+        is ScannedPayload.Sms -> number
+        is ScannedPayload.Email -> address
     }
 
 /**

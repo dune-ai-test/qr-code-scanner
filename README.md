@@ -45,6 +45,10 @@ Everything the build contains today.
 - **Centre-crop decoding** with a full-frame fallback, plus a retry on
   inverted frames for light-on-dark codes
 - **FrameGate** and **full-resolution escalation** — see [Scanning](#scanning)
+- **Deep links** — `geo:`, `tel:`, `sms:` and `mailto:` are instructions
+  rather than addresses, so each gets its own result type and its own action
+  instead of falling through to plain text. See
+  [Deep links](#deep-links)
 
 ### Results — one layout per payload type
 
@@ -140,7 +144,8 @@ in scope is already pinned the same button becomes an unpin.
 | 9 | Settings | Scanner, appearance, storage, permissions, about |
 | 10 | What's new | Release history, read from `ReleaseNotes` |
 
-The result screen routes by payload type, so text, contact and product codes get their own action set rather than a URL-shaped one.
+The result screen routes by payload type, so text, contact, product and the
+deep-link types each get their own action set rather than a URL-shaped one.
 
 ## Architecture
 
@@ -166,7 +171,7 @@ Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore 
 
 The GitHub Actions workflow in `.github/workflows/android.yml` is the build. Every push to `main` and every pull request runs:
 
-- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`, `Zoom`, `SelectionScope`, `RepeatGate`)
+- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`, `Zoom`, `SelectionScope`, `RepeatGate`, `DeepLinkParser`)
 - `lintDebug`
 - `assembleDebug`
 
@@ -265,6 +270,47 @@ so holding one code for six seconds wrote a second history row for it.
 That is the kind of bug that only shows up in a feature nobody has used
 yet, which is why the window is now shorter than the dedupe it sits on.
 
+## Deep links
+
+`geo:`, `tel:`, `sms:` and `mailto:` are instructions, not addresses. A scanner
+that only knows `http` shows all four as plain text, which throws away the
+intent: the user is left copying a URI by hand instead of being offered a
+place to open, a number to dial or a message to write.
+
+`DeepLinkParser` turns each into its own `PayloadType`, so the result screen
+gives it the action that matches — Open in Maps, Call number, Send message,
+Send email — instead of a Share button.
+
+| Scheme | Carries | Result |
+|--------|---------|--------|
+| `geo:` | coordinates, optional `?q=` label, `?z=` or `;u=` zoom | Location |
+| `tel:` | a number, `;ext=` dropped | Phone |
+| `sms:` / `smsto:` | a number, body from `?body=` or a trailing colon | Sms |
+| `mailto:` | address, `?subject=`, `?body=` | Email |
+
+Three decisions worth naming:
+
+- **A malformed deep link stays text.** `place()` rejects coordinates outside
+  the valid range and `?q=` values with no comma, so a nonsense `geo:` comes
+  back null and falls through to the plain-text result. Opening a map in the
+  ocean is worse than showing the string that produced it.
+- **`geo:0,0?q=51.5,-0.12(Home)` prefers the query.** That is the shape Google
+  hands out: the path is null island and the real place is in `?q=`. Reading
+  the path would open the Atlantic.
+- **`+` is a space only inside a query.** `URLDecoder` is not used, because it
+  would turn the `+` in a `+44` number into a space the moment the number
+  passed through a query string.
+
+`mailto:` and `tel:` used to produce a Contact payload. Contact is a vCard, and
+has no "send email" action — a `mailto:` with no phone number landed on a
+screen offering nothing but Share.
+
+The parser is pure string handling with several interacting branches, so
+`tools/check_deeplink.py` mirrors it and replays every case in
+`DeepLinkParserTest` locally. Two bugs in the geo branches — `;u=15` breaking
+the coordinate split, and a bare `?q=Egg HQ` losing its label — were found by
+running it, after tracing by eye had missed both.
+
 ## Typeface
 
 **Geist** (Vercel, SIL Open Font License 1.1). The four weights the
@@ -295,10 +341,9 @@ Worth knowing before trusting any of this on a device.
 - **CI is not the same as a device.** Everything compiles, lints and passes
   unit tests, but the most recent features — PNG export, the style panel,
   What's new, favourites, bulk actions, per-type bulk actions, launcher
-  shortcuts, Geist, camera zoom, continuous mode, the clipboard policy and
-  the scanning
-  budget — have not been seen on a screen, because no phone was connected
-  while they were written.
+  shortcuts, Geist, camera zoom, continuous mode, deep links, the clipboard
+  policy and the scanning budget — have not been seen on a screen, because no
+  phone was connected while they were written.
 - **Live auto-detection is unconfirmed** on real hardware. The shutter
   path, which uses the same decoder, is proven: it reads a photographed
   QR end to end. The live path additionally goes through `FrameGate`,

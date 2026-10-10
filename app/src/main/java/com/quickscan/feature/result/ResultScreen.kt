@@ -1,5 +1,12 @@
 package com.quickscan.feature.result
 
+/**
+ * The extra messaging apps read for a pre-filled SMS body. It is not in
+ * [android.content.Intent], because it is not part of the platform contract —
+ * it is a convention every SMS app has settled on independently.
+ */
+private const val SMS_BODY_EXTRA = "sms_body"
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -42,12 +49,15 @@ import com.quickscan.core.ui.labelRes
 import com.quickscan.core.ui.component.LucideBookmark
 import com.quickscan.core.util.ClipboardGuard
 import com.quickscan.core.ui.component.LucideBookmarkCheck
-import com.quickscan.core.ui.component.LucideBookmarkCheck
 import com.quickscan.core.ui.component.LucideCopy
 import com.quickscan.core.ui.component.LucideExternalLink
 import com.quickscan.core.ui.component.LucideEye
 import com.quickscan.core.ui.component.LucideEyeOff
 import com.quickscan.core.ui.component.LucideLock
+import com.quickscan.core.ui.component.LucideMail
+import com.quickscan.core.ui.component.LucideMapPin
+import com.quickscan.core.ui.component.LucideMessageSquare
+import com.quickscan.core.ui.component.LucidePhone
 import com.quickscan.core.ui.component.LucideShare2
 import com.quickscan.core.ui.component.LucideWifi
 import com.quickscan.core.ui.component.LucideLink
@@ -148,6 +158,15 @@ fun ResultScreen(
                     raw = payload.raw,
                     type = payload.type,
                     scannedAt = entity.createdAt,
+                    value = when (payload) {
+                        // The URI is an instruction to the receiving app, not
+                        // something to read, so the hero names the thing.
+                        is ScannedPayload.Location -> payload.label ?: payload.coordinates
+                        is ScannedPayload.Phone -> payload.number
+                        is ScannedPayload.Sms -> payload.number
+                        is ScannedPayload.Email -> payload.address
+                        else -> payload.raw
+                    },
                 )
             }
 
@@ -364,7 +383,17 @@ private fun ContactHero(payload: ScannedPayload.Contact, scannedAt: Long) {
 
 /** Everything that is not a link or a network renders as a plain code. */
 @Composable
-private fun CodeHero(raw: String, type: PayloadType, scannedAt: Long) {
+/**
+ * @param value what the payload means, where that is not simply the raw text.
+ *   A `geo:` whose headline would otherwise read `geo:0,0?q=51.5,-0.12(Home)`
+ *   is the reason this is not just [raw].
+ */
+private fun CodeHero(
+    raw: String,
+    type: PayloadType,
+    scannedAt: Long,
+    value: String = raw,
+) {
     val palette = QsTheme.palette
     val text = QsTheme.text
 
@@ -393,7 +422,7 @@ private fun CodeHero(raw: String, type: PayloadType, scannedAt: Long) {
                     label = stringResource(type.labelRes),
                 )
                 Text(
-                    text = raw,
+                    text = value,
                     style = text.nav16,
                     color = palette.ink,
                     textAlign = TextAlign.Center,
@@ -465,6 +494,42 @@ private fun ActionRow(payload: ScannedPayload, onShare: () -> Unit) {
                 )
             }
 
+            is ScannedPayload.Location -> {
+                QSPrimaryButton(
+                    label = stringResource(R.string.open_in_maps),
+                    onClick = { context.openGeo(payload.raw) },
+                    icon = LucideMapPin,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            is ScannedPayload.Phone -> {
+                QSPrimaryButton(
+                    label = stringResource(R.string.call_number),
+                    onClick = { context.dial(payload.number) },
+                    icon = LucidePhone,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            is ScannedPayload.Sms -> {
+                QSPrimaryButton(
+                    label = stringResource(R.string.send_message),
+                    onClick = { context.composeSms(payload) },
+                    icon = LucideMessageSquare,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
+            is ScannedPayload.Email -> {
+                QSPrimaryButton(
+                    label = stringResource(R.string.send_email),
+                    onClick = { context.composeEmail(payload) },
+                    icon = LucideMail,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+
             else -> {
                 QSPrimaryButton(
                     label = stringResource(R.string.share_action),
@@ -509,6 +574,10 @@ private fun DetailsCard(
                         is ScannedPayload.Product -> R.string.detail_barcode_number
                         is ScannedPayload.Text -> R.string.detail_plain_text
                         is ScannedPayload.Wifi -> R.string.type_wifi
+                        is ScannedPayload.Location -> R.string.detail_location
+                        is ScannedPayload.Phone -> R.string.detail_phone
+                        is ScannedPayload.Sms -> R.string.detail_message
+                        is ScannedPayload.Email -> R.string.detail_email
                     },
                 ),
             )
@@ -543,12 +612,49 @@ private fun Context.copyToClipboard(text: String, sensitive: Boolean = false) {
 }
 
 private fun Context.openUrl(url: String) {
-    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+    startHandoff(Intent(Intent.ACTION_VIEW, Uri.parse(url)), R.string.error_no_browser)
+}
+
+/** Hands a `geo:` URI to whichever maps app claims it. */
+private fun Context.openGeo(uri: String) {
+    startHandoff(Intent(Intent.ACTION_VIEW, Uri.parse(uri)), R.string.error_no_maps_app)
+}
+
+private fun Context.composeSms(payload: ScannedPayload.Sms) {
+    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:${payload.number}")).apply {
+        // Messaging apps read the body from sms_body, not EXTRA_TEXT.
+        payload.body?.let { putExtra(SMS_BODY_EXTRA, it) }
+    }
+    startHandoff(intent, R.string.error_no_messaging_app)
+}
+
+private fun Context.composeEmail(payload: ScannedPayload.Email) {
+    val intent = Intent(Intent.ACTION_SENDTO, Uri.parse("mailto:")).apply {
+        // A mailto: may carry several recipients; the intent takes an array.
+        putExtra(
+            Intent.EXTRA_EMAIL,
+            payload.address.split(',').map { it.trim() }.toTypedArray(),
+        )
+        payload.subject?.let { putExtra(Intent.EXTRA_SUBJECT, it) }
+        payload.body?.let { putExtra(Intent.EXTRA_TEXT, it) }
+    }
+    startHandoff(intent, R.string.error_no_email_app)
+}
+
+/**
+ * Every handoff leaves the app, and none of them can be guaranteed to land:
+ * a tablet with no dialer is unusual but real, and an intent that throws
+ * ActivityNotFoundException would take the scanner down with it. So each one
+ * reports its own way out rather than crashing.
+ */
+private fun Context.startHandoff(intent: Intent, missingMessage: Int) {
     if (intent.resolveActivity(packageManager) == null) {
-        Toast.makeText(this, R.string.error_no_browser, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, missingMessage, Toast.LENGTH_SHORT).show()
         return
     }
-    startActivity(intent)
+    runCatching { startActivity(intent) }.onFailure {
+        Toast.makeText(this, missingMessage, Toast.LENGTH_SHORT).show()
+    }
 }
 
 private fun Context.sharePayload(payload: ScannedPayload) {
@@ -592,8 +698,5 @@ private fun Context.joinWifi(payload: ScannedPayload.Wifi) {
 }
 
 private fun Context.dial(number: String) {
-    runCatching { startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number"))) }
-        .onFailure {
-            Toast.makeText(this, R.string.error_no_camera_app, Toast.LENGTH_SHORT).show()
-        }
+    startHandoff(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$number")), R.string.error_no_dialer)
 }

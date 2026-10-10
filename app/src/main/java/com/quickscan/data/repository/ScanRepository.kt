@@ -139,6 +139,10 @@ class ScanRepository(
         is ScannedPayload.Contact -> name.ifBlank { email ?: phone ?: "Contact" }
         is ScannedPayload.Product -> value
         is ScannedPayload.Text -> raw.lineSequence().first().take(64).ifBlank { "Text" }
+        is ScannedPayload.Location -> label ?: coordinates
+        is ScannedPayload.Phone -> number
+        is ScannedPayload.Sms -> number
+        is ScannedPayload.Email -> address.substringBefore(',')
     }
 
     private fun ScannedPayload.displaySubtitle(): String = when (this) {
@@ -147,6 +151,10 @@ class ScanRepository(
         is ScannedPayload.Contact -> listOfNotNull(phone, email).joinToString(" · ")
         is ScannedPayload.Product -> symbology
         is ScannedPayload.Text -> "${raw.length} characters"
+        is ScannedPayload.Location -> coordinates
+        is ScannedPayload.Phone -> "Phone number"
+        is ScannedPayload.Sms -> body?.let { "Message · ${it.take(40)}" } ?: "Message"
+        is ScannedPayload.Email -> listOfNotNull(subject, body).joinToString(" · ")
     }
 
     /** Monday 00:00 local time, matching how people read "this week". */

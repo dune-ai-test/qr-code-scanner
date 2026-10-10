@@ -1,5 +1,7 @@
 package com.quickscan.data.barcode
 
+import java.util.Locale
+
 /** The kinds of payload QuickScan knows how to act on. */
 enum class PayloadType {
     Url,
@@ -7,6 +9,14 @@ enum class PayloadType {
     Contact,
     Product,
     Text,
+    /** `geo:` — a place, handed to a maps app. */
+    Location,
+    /** `tel:` — a number to dial. */
+    Phone,
+    /** `sms:` — a message to start. */
+    Sms,
+    /** `mailto:` — an email to write. */
+    Email,
 }
 
 sealed interface ScannedPayload {
@@ -64,6 +74,47 @@ sealed interface ScannedPayload {
     ) : ScannedPayload {
         override val type = PayloadType.Text
     }
+
+    data class Location(
+        override val raw: String,
+        val latitude: Double,
+        val longitude: Double,
+        /** The `?q=` label, e.g. "Home". Null when the code gave none. */
+        val label: String?,
+        val zoom: Int?,
+    ) : ScannedPayload {
+        override val type = PayloadType.Location
+
+        /** "51.5000, -0.1200", for rows and details where there is no room. */
+        val coordinates: String
+            get() = String.format(Locale.US, "%.4f, %.4f", latitude, longitude)
+    }
+
+    data class Phone(
+        override val raw: String,
+        val number: String,
+    ) : ScannedPayload {
+        override val type = PayloadType.Phone
+    }
+
+    data class Sms(
+        override val raw: String,
+        val number: String,
+        /** Pre-filled message text, when the code carried any. */
+        val body: String?,
+    ) : ScannedPayload {
+        override val type = PayloadType.Sms
+    }
+
+    data class Email(
+        override val raw: String,
+        /** May be comma-separated; the send intent takes them as an array. */
+        val address: String,
+        val subject: String?,
+        val body: String?,
+    ) : ScannedPayload {
+        override val type = PayloadType.Email
+    }
 }
 
 /**
@@ -84,25 +135,11 @@ object PayloadParser {
         if (trimmed.startsWith("BEGIN:VCARD", ignoreCase = true)) {
             return parseVCard(trimmed, raw)
         }
+        // geo:, tel:, sms: and mailto: are instructions, not addresses. They
+        // are checked before http because "https:" would otherwise be the only
+        // scheme with a layout, which is the bug this replaces.
+        DeepLinkParser.parse(trimmed, raw)?.let { return it }
         val lower = trimmed.lowercase()
-        if (lower.startsWith("mailto:")) {
-            return ScannedPayload.Contact(
-                raw = raw,
-                name = "",
-                phone = null,
-                email = trimmed.removePrefix("mailto:").substringBefore('?'),
-                organisation = null,
-            )
-        }
-        if (lower.startsWith("tel:")) {
-            return ScannedPayload.Contact(
-                raw = raw,
-                name = "",
-                phone = trimmed.substringAfter(':'),
-                email = null,
-                organisation = null,
-            )
-        }
         if (lower.startsWith("http://") || lower.startsWith("https://")) {
             val withoutScheme = trimmed.substringAfter("://")
             val host = withoutScheme
