@@ -1,17 +1,25 @@
 package com.quickscan.feature.history
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import android.widget.Toast
 import androidx.compose.material3.AlertDialog
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.border
 import android.content.Intent
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.clickable
 import com.quickscan.data.local.ScanEntity
 import com.quickscan.core.ui.component.QSIconTile
 import com.quickscan.core.ui.component.LucideChevronRight
 import com.quickscan.core.ui.component.LucideBookmark
+import com.quickscan.core.ui.component.LucideCheck
+import com.quickscan.core.ui.component.LucideCheckSquare
+import com.quickscan.core.ui.component.LucideShare2
+import com.quickscan.core.ui.component.LucideTrash2
+import com.quickscan.core.ui.component.LucideX
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -34,8 +42,13 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.res.stringResource
@@ -44,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quickscan.R
+import kotlinx.coroutines.launch
 import com.quickscan.core.ui.ScanDates
 import com.quickscan.core.ui.icon
 import com.quickscan.core.ui.labelRes
@@ -73,6 +87,7 @@ import com.quickscan.core.ui.theme.Space
 import com.quickscan.data.barcode.PayloadType
 import com.quickscan.data.repository.ScanFilter
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun HistoryScreen(
     onBack: () -> Unit,
@@ -247,6 +262,7 @@ fun HistoryScreen(
                 }
             }
         }
+    }
 
         QSTabBar(
             selected = TabDestination.History,
@@ -288,17 +304,16 @@ fun HistoryScreen(
                 containerColor = palette.surface,
             )
         }
-    }
-    }
 
-    if (deletedCount > 0) {
-        LaunchedEffect(deletedCount) {
-            Toast.makeText(
-                context,
-                context.getString(R.string.deleted_selected, deletedCount),
-                Toast.LENGTH_SHORT,
-            ).show()
-            deletedCount = 0
+        if (deletedCount > 0) {
+            LaunchedEffect(deletedCount) {
+                Toast.makeText(
+                    context,
+                    context.getString(R.string.deleted_selected, deletedCount),
+                    Toast.LENGTH_SHORT,
+                ).show()
+                deletedCount = 0
+            }
         }
     }
 }
@@ -376,6 +391,7 @@ private fun ScanRow(
 }
 
 /** Toolbar shown instead of the nav bar while a selection is active. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SelectionBar(
     count: Int,
@@ -437,6 +453,7 @@ private fun SelectionBar(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SelectionAction(
     icon: androidx.compose.ui.graphics.vector.ImageVector,

@@ -402,7 +402,7 @@ private fun Viewfinder(
         }
 
         AutoDetectPill(
-            enabled = state.autoDetect && hasPermission,
+            enabled = autoDetect && hasPermission,
             modifier = Modifier
                 .align(Alignment.TopStart)
                 .padding(20.dp),

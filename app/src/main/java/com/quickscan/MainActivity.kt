@@ -58,10 +58,13 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     onboarded?.let { complete ->
+                        // requestedRoute is a mutable field, so it needs a
+                        // local before it can be used as a String.
+                        val shortcut = requestedRoute
                         QuickScanNavHost(
                             startDestination = when {
                                 !complete -> Routes.WELCOME
-                                requestedRoute != null -> requestedRoute
+                                shortcut != null -> shortcut
                                 else -> Routes.SCAN
                             },
                         )

@@ -1,6 +1,7 @@
 package com.quickscan.core.ui.component
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
@@ -77,7 +78,9 @@ fun QrStyledView(
     val matrix = remember(payload, style.logo) { QrRenderer.encode(payload, style) }
     Canvas(modifier) {
         val m = matrix ?: return@Canvas
-        QrRenderer.draw(this, m, style, size.width.toInt())
+        drawIntoCanvas { canvas ->
+            QrRenderer.draw(canvas, m, style, size.width.toInt())
+        }
     }
 }
 

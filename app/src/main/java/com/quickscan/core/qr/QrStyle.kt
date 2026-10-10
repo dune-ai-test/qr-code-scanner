@@ -176,11 +176,11 @@ object QrRenderer {
 
     private fun drawLogo(canvas: Canvas, logo: QrLogo, bounds: Rect) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = DEFAULT_FOREGROUND
+            color = QrStyle.DEFAULT_FOREGROUND
             style = Paint.Style.FILL
         }
         val stroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = DEFAULT_FOREGROUND
+            color = QrStyle.DEFAULT_FOREGROUND
             style = Paint.Style.STROKE
             strokeWidth = bounds.width() * STROKE_FRACTION
             strokeCap = Paint.Cap.ROUND

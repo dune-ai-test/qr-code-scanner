@@ -24,7 +24,7 @@ String Int Long Float Double Boolean Byte Short Char Unit Any Nothing
 List Map Set Array Pair Triple Result Exception Throwable Error
 IntArray LongArray FloatArray BooleanArray CharArray ByteArray
 ArrayList HashMap LinkedHashMap HashSet MutableList MutableMap MutableSet
-Comparable Number Regex Runnable Thread IntRange IntProgression
+Comparable Number Regex Runnable Thread IntRange IntProgression Suppress OptIn
 StringBuilder IllegalArgumentException IllegalStateException
 """.split())
 
@@ -32,7 +32,7 @@ StringBuilder IllegalArgumentException IllegalStateException
 DELEGATES = set("getValue setValue provideDelegate iterator hasNext next".split())
 
 # Always in scope.
-IMPLICIT = set("R Build View Modifier Dp Compose Material3 Android Int Float Boolean String Long Unit".split())
+IMPLICIT = set("R Build View Modifier Dp Compose Material3 Android Int Float Boolean String Long Unit System Math Thread".split())
 
 KEYWORDS = set("""
 when where try catch finally do val var fun class object interface enum typealias
@@ -144,6 +144,10 @@ def main():
         candidates |= set(re.findall(r'\bis\s+([A-Z][A-Za-z0-9]+)', code))
         candidates |= set(re.findall(r'(?<![\w.])([A-Z][A-Za-z0-9]+)\s*\(', code))
         candidates -= set(re.findall(r'\.\s*([A-Z][A-Za-z0-9]+)\s*\(', code))
+        # A bare capitalised argument: .clip(CircleShape)
+        candidates |= set(re.findall(r'\(\s*([A-Z][A-Za-z0-9]+)\s*[),]', code))
+        # The right-hand side of an assignment: val x = LocalContext.current
+        candidates |= set(re.findall(r'=\s*([A-Z][A-Za-z0-9]+)\s*[.(]', code))
 
         for name in candidates:
             if name not in known:

@@ -12,6 +12,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -58,14 +59,30 @@ class HistoryViewModel @Inject constructor(
     private val allScans = scanRepository.observeScans()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val state: StateFlow<HistoryUiState> = combine(
-        allScans,
-        scanRepository.observeStats(),
+    // combine() has typed overloads only up to five flows, so the controls
+    // fold into one flow before being merged with the scans.
+    private val controls: Flow<List<Any>> = combine(
         filter,
         query,
         searchOpen,
         selection,
-    ) { scans, stats, activeFilter, activeQuery, isSearchOpen, selected ->
+    ) { activeFilter, activeQuery, isSearchOpen, selected ->
+        listOf(activeFilter, activeQuery, isSearchOpen, selected)
+    }
+
+    val state: StateFlow<HistoryUiState> = combine(
+        allScans,
+        scanRepository.observeStats(),
+        controls,
+    ) { scans, stats, controlValues ->
+        @Suppress("UNCHECKED_CAST")
+        val activeFilter = controlValues[0] as ScanFilter
+        @Suppress("UNCHECKED_CAST")
+        val activeQuery = controlValues[1] as String
+        @Suppress("UNCHECKED_CAST")
+        val isSearchOpen = controlValues[2] as Boolean
+        @Suppress("UNCHECKED_CAST")
+        val selected = controlValues[3] as Set<Long>
         val searched = if (activeQuery.isBlank()) {
             scans
         } else {
@@ -81,7 +98,8 @@ class HistoryViewModel @Inject constructor(
             query = activeQuery,
             searchOpen = isSearchOpen,
             totalUnfiltered = scans.size,
-            visibleIds = filtered.map { it.id },
+            visibleIds = filtered.map { row -> row.id },
+            selection = selected,
         ).pruneSelection()
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), HistoryUiState())
 

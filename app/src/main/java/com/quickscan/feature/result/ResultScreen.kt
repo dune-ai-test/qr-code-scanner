@@ -44,6 +44,7 @@ import com.quickscan.core.ui.labelRes
 import com.quickscan.core.ui.component.BannerTone
 import com.quickscan.core.ui.component.LucideBookmark
 import com.quickscan.core.ui.component.LucideBookmarkCheck
+import com.quickscan.core.ui.component.LucideBookmarkCheck
 import com.quickscan.core.ui.component.LucideCopy
 import com.quickscan.core.ui.component.LucideExternalLink
 import com.quickscan.core.ui.component.LucideEye
@@ -436,6 +437,7 @@ private fun CodeHero(raw: String, type: PayloadType, scannedAt: Long) {
 /** The action set is chosen by payload type, so each result does what fits. */
 @Composable
 private fun ActionRow(payload: ScannedPayload, onShare: () -> Unit) {
+    val context = LocalContext.current
 
     Row(
         modifier = Modifier.fillMaxWidth(),
