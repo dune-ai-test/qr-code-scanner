@@ -45,6 +45,13 @@ private class FakeScanDao : ScanDao {
         rows.removeAll { it.id == id }
     }
 
+    override suspend fun deleteByIds(ids: List<Long>) {
+        rows.removeAll { it.id in ids }
+    }
+
+    override suspend fun findByIds(ids: List<Long>): List<ScanEntity> =
+        rows.filter { it.id in ids }.sortedByDescending { it.createdAt }
+
     override suspend fun deleteAll() {
         rows.clear()
     }
@@ -251,4 +258,60 @@ class ScanRepositoryTest {
         val title = dao.rows.single().title
         assertFalse(title.contains('\n'))
     }
+
+    @Test
+    fun `deleteAll removes only the given ids`() = runTest {
+        val dao = FakeScanDao()
+        val repo = repository(dao)
+        val first = repo.record(url, ScanSource.Camera)
+        repo.record(ScannedPayload.Text("keep me"), ScanSource.Camera, at = NOW + 10)
+        val third = repo.record(url, ScanSource.Camera, at = NOW + 20)
+
+        repo.deleteAll(listOf(first, third))
+
+        assertEquals(listOf("keep me"), dao.rows.map { it.rawValue })
+    }
+
+    @Test
+    fun `deleteAll with no ids does nothing`() = runTest {
+        val dao = FakeScanDao()
+        val repo = repository(dao)
+        repo.record(url, ScanSource.Camera)
+
+        repo.deleteAll(emptyList())
+
+        assertEquals(1, dao.rows.size)
+    }
+
+    @Test
+    fun `rawValues come back oldest first`() = runTest {
+        val dao = FakeScanDao()
+        val repo = repository(dao)
+        val first = repo.record(url, ScanSource.Camera)
+        val second = repo.record(ScannedPayload.Text("second"), ScanSource.Camera, at = NOW + 10)
+
+        assertEquals(
+            listOf("https://example.com", "second"),
+            repo.rawValues(listOf(second, first)),
+        )
+    }
+
+    @Test
+    fun `toggling a pin flips it and reports the new value`() = runTest {
+        val dao = FakeScanDao()
+        val repo = repository(dao)
+        val id = repo.record(url, ScanSource.Camera)
+
+        assertTrue(repo.togglePinned(id))
+        assertTrue(dao.rows.single { it.id == id }.isPinned)
+        assertFalse(repo.togglePinned(id))
+        assertFalse(dao.rows.single { it.id == id }.isPinned)
+    }
+
+    @Test
+    fun `toggling an unknown id is a no-op`() = runTest {
+        val repo = repository()
+        assertFalse(repo.togglePinned(4_242L))
+    }
 }
+
