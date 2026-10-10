@@ -89,15 +89,6 @@
     <string name="detail_contact_card">Contact card</string>
     <string name="detail_barcode_number">Barcode number</string>
 
-    <!-- Result: URL safety -->
-    <string name="safety_reason_plain_http">Opens over plain HTTP — traffic is not encrypted</string>
-    <string name="safety_reason_ip_host">Host is a bare IP address rather than a domain</string>
-    <string name="safety_reason_punycode">Host uses punycode and may imitate another domain</string>
-    <string name="safety_reason_credentials">Credentials are embedded in the address</string>
-    <string name="safety_reason_tld">Top-level domain is frequently used for abuse</string>
-    <string name="safety_reason_keywords">Address matches a known phishing pattern</string>
-    <string name="safety_reason_lookalike">Address resembles a well-known brand written incorrectly</string>
-    <string name="safety_reason_shortened">Address is shortened, so its destination is hidden</string>
 
     <!-- Result: Wi-Fi -->
     <string name="wifi_ssid_label">SSID</string>

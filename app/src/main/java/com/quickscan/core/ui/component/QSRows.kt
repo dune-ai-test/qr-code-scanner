@@ -335,51 +335,6 @@ fun QSBadge(
     }
 }
 
-/** Status or safety banner — green for verified, amber for warnings. */
-@Composable
-fun QSBanner(
-    icon: ImageVector,
-    message: String,
-    modifier: Modifier = Modifier,
-    tone: BannerTone = BannerTone.Success,
-) {
-    val palette = QsTheme.palette
-    val text = QsTheme.text
-    val (background, ink) = when (tone) {
-        BannerTone.Success -> palette.successSurface to palette.successInk
-        BannerTone.Warning -> palette.warnSurface to palette.warnInk
-    }
-    val iconInk = when (tone) {
-        BannerTone.Success -> palette.successIcon
-        BannerTone.Warning -> palette.warnIcon
-    }
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(Radius.xl)
-            .background(background)
-            .padding(horizontal = Space.xl, vertical = Space.lg),
-        horizontalArrangement = Arrangement.spacedBy(Space.md),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = iconInk,
-            modifier = Modifier.size(18.dp),
-        )
-        Text(
-            text = message,
-            style = text.chip13.copy(fontWeight = FontWeight.Medium),
-            color = ink,
-            modifier = Modifier.weight(1f),
-        )
-    }
-}
-
-enum class BannerTone { Success, Warning }
-
 /** One of the three History counters. */
 @Composable
 fun QSStat(value: String, label: String, modifier: Modifier = Modifier) {

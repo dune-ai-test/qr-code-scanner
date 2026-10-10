@@ -8,7 +8,6 @@ import com.quickscan.data.local.ScanDao
 import com.quickscan.data.local.SettingsStore
 import com.quickscan.data.repository.ScanRepository
 import com.quickscan.data.repository.SettingsRepository
-import com.quickscan.data.safety.UrlSafetyVerifier
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -52,9 +51,6 @@ object AppModule {
     fun provideSettingsRepository(settingsStore: SettingsStore): SettingsRepository =
         SettingsRepository(settingsStore)
 
-    @Provides
-    @Singleton
-    fun provideUrlSafetyVerifier(): UrlSafetyVerifier = UrlSafetyVerifier()
 
     @Provides
     @Singleton

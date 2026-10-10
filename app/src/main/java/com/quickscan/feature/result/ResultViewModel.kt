@@ -6,8 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.quickscan.data.barcode.ScannedPayload
 import com.quickscan.data.local.ScanEntity
 import com.quickscan.data.repository.ScanRepository
-import com.quickscan.data.safety.SafetyVerdict
-import com.quickscan.data.safety.UrlSafetyVerifier
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -21,7 +19,6 @@ import javax.inject.Inject
 data class ResultUiState(
     val entity: ScanEntity? = null,
     val payload: ScannedPayload? = null,
-    val safety: SafetyVerdict? = null,
     val pinned: Boolean = false,
     val loading: Boolean = true,
 )
@@ -29,7 +26,6 @@ data class ResultUiState(
 @HiltViewModel
 class ResultViewModel @Inject constructor(
     private val scanRepository: ScanRepository,
-    urlSafetyVerifier: UrlSafetyVerifier,
     savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
 
@@ -50,13 +46,12 @@ class ResultViewModel @Inject constructor(
             ResultUiState(
                 entity = entity,
                 payload = payload,
-                safety = (payload as? ScannedPayload.Url)?.let { urlSafetyVerifier.verify(it.url) },
                 pinned = entity.isPinned,
                 loading = false,
             ),
         )
         scanRepository.observeScan(scanId).collect { row ->
-            row?.let { emit(it.toState(payload, urlSafetyVerifier)) }
+            row?.let { emit(it.toState(payload)) }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ResultUiState())
 
@@ -75,13 +70,9 @@ class ResultViewModel @Inject constructor(
         }
     }
 
-    private fun ScanEntity.toState(
-        payload: ScannedPayload,
-        verifier: UrlSafetyVerifier,
-    ) = ResultUiState(
+    private fun ScanEntity.toState(payload: ScannedPayload) = ResultUiState(
         entity = this,
         payload = payload,
-        safety = (payload as? ScannedPayload.Url)?.let { verifier.verify(it.url) },
         pinned = isPinned,
         loading = false,
     )

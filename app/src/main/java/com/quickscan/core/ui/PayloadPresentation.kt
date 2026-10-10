@@ -1,6 +1,7 @@
 package com.quickscan.core.ui
 
 import androidx.annotation.StringRes
+
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import com.quickscan.R
@@ -11,7 +12,6 @@ import com.quickscan.core.ui.component.LucideWifi
 import com.quickscan.core.ui.theme.QsTheme
 import com.quickscan.data.barcode.PayloadType
 import com.quickscan.data.barcode.ScannedPayload
-import com.quickscan.data.safety.SafetyReason
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -49,19 +49,6 @@ fun payloadTileColors(type: PayloadType): Pair<Color, Color> {
         else -> palette.accentTint to palette.accentTintInk
     }
 }
-
-@get:StringRes
-val SafetyReason.labelRes: Int
-    get() = when (this) {
-        SafetyReason.PlainHttp -> R.string.safety_reason_plain_http
-        SafetyReason.IpLiteralHost -> R.string.safety_reason_ip_host
-        SafetyReason.PunycodeHost -> R.string.safety_reason_punycode
-        SafetyReason.EmbeddedCredentials -> R.string.safety_reason_credentials
-        SafetyReason.SuspiciousTld -> R.string.safety_reason_tld
-        SafetyReason.PhishingKeywords -> R.string.safety_reason_keywords
-        SafetyReason.BrandLookalike -> R.string.safety_reason_lookalike
-        SafetyReason.ShortenedHost -> R.string.safety_reason_shortened
-    }
 
 /** The headline a payload's own row shows, e.g. the host or the SSID. */
 val ScannedPayload.headline: String

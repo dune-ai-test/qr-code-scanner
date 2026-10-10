@@ -41,7 +41,6 @@ import com.quickscan.R
 import com.quickscan.core.ui.ScanDates
 import com.quickscan.core.ui.headline
 import com.quickscan.core.ui.labelRes
-import com.quickscan.core.ui.component.BannerTone
 import com.quickscan.core.ui.component.LucideBookmark
 import com.quickscan.core.ui.component.LucideBookmarkCheck
 import com.quickscan.core.ui.component.LucideBookmarkCheck
@@ -51,11 +50,9 @@ import com.quickscan.core.ui.component.LucideEye
 import com.quickscan.core.ui.component.LucideEyeOff
 import com.quickscan.core.ui.component.LucideLock
 import com.quickscan.core.ui.component.LucideShare2
-import com.quickscan.core.ui.component.LucideShieldCheck
 import com.quickscan.core.ui.component.LucideWifi
 import com.quickscan.core.ui.component.LucideLink
 import com.quickscan.core.ui.component.QSBadge
-import com.quickscan.core.ui.component.QSBanner
 import com.quickscan.core.ui.component.QSDetailRow
 import com.quickscan.core.ui.component.QSDivider
 import com.quickscan.core.ui.component.QSIconTile
@@ -74,7 +71,6 @@ import com.quickscan.core.ui.theme.Radius
 import com.quickscan.core.ui.theme.Space
 import com.quickscan.data.barcode.PayloadType
 import com.quickscan.data.barcode.ScannedPayload
-import com.quickscan.data.safety.SafetyVerdict
 
 @Composable
 fun ResultScreen(
@@ -134,7 +130,6 @@ fun ResultScreen(
             when (payload) {
                 is ScannedPayload.Url -> UrlHero(
                     raw = payload.raw,
-                    safety = state.safety,
                     scannedAt = entity.createdAt,
                 )
 
@@ -189,11 +184,10 @@ fun ResultScreen(
     }
 }
 
-/** The URL result: decoded address, safety verdict and an open action. */
+/** The URL result: the decoded address, with copy and open actions. */
 @Composable
 private fun UrlHero(
     raw: String,
-    safety: SafetyVerdict?,
     scannedAt: Long,
 ) {
     val palette = QsTheme.palette
@@ -246,25 +240,6 @@ private fun UrlHero(
             }
         }
 
-        safety?.let { verdict ->
-            QSBanner(
-                icon = LucideShieldCheck,
-                message = verdict.headline,
-                tone = if (verdict.isSafe) BannerTone.Success else BannerTone.Warning,
-            )
-            if (!verdict.isSafe) {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    verdict.reasons.forEach { reason ->
-                        Text(
-                            text = stringResource(reason.labelRes),
-                            style = QsTheme.text.rowSub12,
-                            color = palette.warnInk,
-                            modifier = Modifier.padding(start = Space.xl),
-                        )
-                    }
-                }
-            }
-        }
     }
 }
 

@@ -53,7 +53,7 @@ object ReleaseNotes {
                 ),
                 Highlight(
                     title = "A result screen per payload",
-                    detail = "Links open with a safety check, Wi-Fi codes reveal a " +
+                    detail = "Links open straight away, Wi-Fi codes reveal a " +
                         "password and offer to join, contacts offer to save.",
                 ),
                 Highlight(

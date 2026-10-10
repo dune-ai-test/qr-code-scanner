@@ -11,7 +11,7 @@ The visual language is deliberately iOS-native rather than Material: a floating 
 | 1 | Onboarding — welcome | Value props, procedural QR hero |
 | 2 | Onboarding — name | Live avatar preview that tracks the field |
 | 3 | Scan | CameraX preview, reticle, torch, flip, gallery, paste |
-| 4 | Result — website | Decoded URL, local safety check, open action |
+| 4 | Result — website | Decoded URL with copy, open and share |
 | 5 | Result — Wi-Fi | SSID, revealable password, join action |
 | 6 | History | Stats, filter chips, date grouping |
 | 7 | History — empty | First-run state with suggestions |
@@ -27,7 +27,6 @@ com.quickscan
 ├── core/qr          QrPlaceholder (seeded 25x25 generator), QrEncoder (ZXing)
 ├── core/ui          theme tokens, shared components, payload presentation
 ├── data/barcode     ZxingDecoder, PayloadParser
-├── data/safety      UrlSafetyVerifier
 ├── data/local       Room entities/DAO, DataStore preferences
 ├── data/repository  ScanRepository, SettingsRepository
 ├── feature/*        onboarding, scanner, result, history, create, settings
@@ -39,18 +38,13 @@ Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore 
 
 ## The local-first promise
 
-Two things make it real rather than aspirational:
-
-1. **No `INTERNET` permission** in the manifest. Removing it is the enforcement mechanism, not a promise.
-2. **The safety check is pure string inspection.** `UrlSafetyVerifier` reads the address itself — HTTP vs HTTPS, IP-literal hosts, punycode and IDN homographs, embedded credentials, high-abuse TLDs, shortened hosts, phishing keyword patterns, digit-substituted brand lookalikes. There is no DNS lookup and no reputation service, so "Link verified · no known threats" only claims what it actually checked. When it finds something, the banner says so and lists the reasons.
-
-Opening a link, joining a network and sharing are hand-offs to other apps, not network calls made by QuickScan.
+**No `INTERNET` permission** in the manifest. Removing it is the enforcement mechanism, not a promise: there is no code path that could open a socket even by accident. Opening a link, joining a network and sharing are hand-offs to other apps.
 
 ## Building
 
 The GitHub Actions workflow in `.github/workflows/android.yml` is the build. Every push to `main` and every pull request runs:
 
-- unit tests (`PayloadParser`, `UrlSafetyVerifier`, `QrPlaceholder`, `ScanRepository`)
+- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`)
 - `lintDebug`
 - `assembleDebug`
 
