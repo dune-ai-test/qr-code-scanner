@@ -113,6 +113,14 @@ def main():
         if " import import " in src:
             problems.append("%s: malformed import line" % rel)
 
+        # Kotlin has no `val a, b = 1, 2`; that is a C and Java habit and the
+        # compiler rejects it with "Unexpected tokens", pointing at the line
+        # without saying what is wrong with it.
+        for number, line in enumerate(src.split("\n"), 1):
+            if re.match(r'\s*val [a-zA-Z_]\w*(?:\s*,\s*[a-zA-Z_]\w*)+\s*=', line):
+                problems.append("%s:%d: val a, b = ... is not Kotlin; declare "
+                                "each one" % (rel, number))
+
         # Kotlin requires every import to precede every declaration. A const
         # added just below the package line reads as a tidy place for it and
         # fails the compile with "imports are only allowed in the beginning of

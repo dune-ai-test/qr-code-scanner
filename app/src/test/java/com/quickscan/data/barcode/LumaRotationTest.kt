@@ -20,7 +20,9 @@ class LumaRotationTest {
 
     @Test
     fun `tighten drops the row padding`() {
-        val width, height, stride = 4, 3, 6
+        val width = 4
+        val height = 3
+        val stride = 6
         val padded = ByteArray(stride * height)
         for (y in 0 until height) {
             for (x in 0 until width) padded[y * stride + x] = (y * width + x).toByte()
@@ -40,7 +42,8 @@ class LumaRotationTest {
 
     @Test
     fun `a quarter turn swaps the axes`() {
-        val width, height = 4, 3
+        val width = 4
+        val height = 3
         val src = plane(width, height)
 
         val out = LumaRotation.rotate90(src, width, width, height)
@@ -58,7 +61,8 @@ class LumaRotationTest {
 
     @Test
     fun `a quarter turn is its own inverse`() {
-        val width, height = 5, 3
+        val width = 5
+        val height = 3
         val src = plane(width, height)
 
         val round = LumaRotation.rotate90(
@@ -71,7 +75,8 @@ class LumaRotationTest {
 
     @Test
     fun `a half turn is its own inverse`() {
-        val width, height = 4, 3
+        val width = 4
+        val height = 3
         val src = plane(width, height)
 
         val round = LumaRotation.rotate180(
@@ -84,7 +89,8 @@ class LumaRotationTest {
 
     @Test
     fun `two quarter turns equal a half turn`() {
-        val width, height = 4, 3
+        val width = 4
+        val height = 3
         val src = plane(width, height)
 
         val twice = LumaRotation.rotate90(
@@ -97,7 +103,8 @@ class LumaRotationTest {
 
     @Test
     fun `a three quarter turn is the inverse of a quarter turn`() {
-        val width, height = 4, 3
+        val width = 4
+        val height = 3
         val src = plane(width, height)
 
         val three = LumaRotation.rotate270(src, width, width, height)
@@ -108,7 +115,8 @@ class LumaRotationTest {
 
     @Test
     fun `every pixel survives a full turn`() {
-        val width, height = 6, 4
+        val width = 6
+        val height = 4
         val src = plane(width, height)
 
         var current = LumaRotation.rotate90(src, width, width, height)
@@ -121,7 +129,9 @@ class LumaRotationTest {
 
     @Test
     fun `dispatch by degrees matches the explicit rotations`() {
-        val width, height, stride = 4, 3, 5
+        val width = 4
+        val height = 3
+        val stride = 5
         val padded = ByteArray(stride * height)
         for (y in 0 until height) {
             for (x in 0 until width) padded[y * stride + x] = (y * width + x).toByte()
