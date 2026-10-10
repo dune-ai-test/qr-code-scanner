@@ -24,17 +24,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -69,10 +68,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.quickscan.R
-import com.quickscan.core.ui.ScanDates
-import com.quickscan.core.ui.icon
 import com.quickscan.core.ui.labelRes
-import com.quickscan.core.ui.payloadTileColors
 import com.quickscan.core.qr.DecodeImages
 import com.quickscan.core.ui.component.LucideClipboardPaste
 import com.quickscan.core.util.ClipboardGuard
@@ -80,8 +76,6 @@ import com.quickscan.core.ui.component.LucideImage
 import com.quickscan.core.ui.component.LucideRepeat
 import com.quickscan.core.ui.component.LucideScanLine
 import com.quickscan.core.ui.component.LucideZap
-import com.quickscan.core.ui.component.QSActionTile
-import com.quickscan.core.ui.component.QSListRow
 import com.quickscan.core.ui.component.QSPrimaryButton
 import com.quickscan.core.ui.component.QSSecondaryButton
 import com.quickscan.core.ui.component.QSTabBar
@@ -89,13 +83,11 @@ import com.quickscan.core.ui.component.tabBarClearance
 import com.quickscan.core.ui.component.QSTextField
 import com.quickscan.core.ui.component.QrCornerBrackets
 import com.quickscan.core.ui.component.QrPlaceholderView
-import com.quickscan.core.ui.component.StatusBarSpacer
 import com.quickscan.core.ui.component.TabDestination
 import com.quickscan.core.ui.theme.QsTheme
 import com.quickscan.core.ui.theme.rememberReducedMotion
 import com.quickscan.core.ui.theme.Radius
 import com.quickscan.core.ui.theme.Space
-import com.quickscan.data.barcode.PayloadType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import com.quickscan.data.barcode.ScanConfidence
@@ -113,7 +105,6 @@ private const val HINT_HOLD_MILLIS = 1_200L
 @Composable
 fun ScannerScreen(
     onOpenResult: (Long) -> Unit,
-    onOpenHistory: () -> Unit,
     onTabSelected: (TabDestination) -> Unit,
     viewModel: ScannerViewModel = hiltViewModel(),
 ) {
@@ -124,7 +115,6 @@ fun ScannerScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val haptics = LocalHapticFeedback.current
-    val listState = rememberLazyListState()
 
     var hasCameraPermission by remember {
         mutableStateOf(context.hasCameraPermission())
@@ -189,11 +179,6 @@ fun ScannerScreen(
         onDispose { runCatching { toneGenerator?.release() } }
     }
 
-    // The paste card is inserted below the fold, so bring it into view.
-    LaunchedEffect(state.pasteOpen) {
-        if (state.pasteOpen) listState.animateScrollToItem(PASTE_CARD_ITEM)
-    }
-
     LaunchedEffect(state.autoDetect) { controller.setAutoDetect(state.autoDetect) }
 
     LaunchedEffect(Unit) {
@@ -216,141 +201,55 @@ fun ScannerScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize().background(palette.bg)) {
-    Column(modifier = Modifier.fillMaxSize()) {
-        StatusBarSpacer()
-
-        LazyColumn(
-            state = listState,
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(Space.x2xl),
-        ) {
-            item {
-                Viewfinder(
-                    hasPermission = hasCameraPermission,
-                    controller = controller,
-                    torchOn = state.torchOn,
-                    autoDetect = state.autoDetect,
-                    continuousMode = state.continuousMode,
-                    confidence = confidence,
-                    hintVisible = hintVisible,
-                    onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
-                    onOpenSettings = context::openAppSettings,
-                    onTorch = {
-                        controller.toggleTorch().also(viewModel::onTorchChanged)
-                    },
-                    onFlip = {
-                        val next = !state.usingFrontCamera
-                        controller.switchCamera()
-                        viewModel.onCameraSwitched(next)
-                    },
-                    onGallery = { imagePicker.launch(pickImageRequest()) },
-                    onShutter = {
-                        if (!state.busy) {
-                            viewModel.onCaptureStarted()
-                            controller.capture { code -> viewModel.onCaptured(code) }
-                        }
-                    },
-                    zoom = zoom,
-                    onStepZoom = { controller.stepZoom() },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-            }
-
-            item {
-                Column(
-                    modifier = Modifier.padding(horizontal = Space.x2xl),
-                    verticalArrangement = Arrangement.spacedBy(Space.lg),
-                ) {
-                    Text(
-                        text = stringResource(R.string.scanner_headline),
-                        style = text.title26,
-                        color = palette.ink,
-                    )
-                    Text(
-                        text = stringResource(R.string.scanner_subhead),
-                        style = text.body14,
-                        color = palette.inkMuted,
-                    )
+    Box(modifier = Modifier.fillMaxSize().background(palette.scene)) {
+        Viewfinder(
+            hasPermission = hasCameraPermission,
+            controller = controller,
+            torchOn = state.torchOn,
+            autoDetect = state.autoDetect,
+            continuousMode = state.continuousMode,
+            confidence = confidence,
+            hintVisible = hintVisible,
+            onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+            onOpenSettings = context::openAppSettings,
+            onTorch = {
+                controller.toggleTorch().also(viewModel::onTorchChanged)
+            },
+            onFlip = {
+                val next = !state.usingFrontCamera
+                controller.switchCamera()
+                viewModel.onCameraSwitched(next)
+            },
+            onGallery = { imagePicker.launch(pickImageRequest()) },
+            onShutter = {
+                if (!state.busy) {
+                    viewModel.onCaptureStarted()
+                    controller.capture { code -> viewModel.onCaptured(code) }
                 }
-            }
+            },
+            onPaste = { viewModel.setPasteOpen(!state.pasteOpen) },
+            zoom = zoom,
+            onStepZoom = { controller.stepZoom() },
+            modifier = Modifier.fillMaxSize(),
+        )
 
-            item {
-                Row(
-                    modifier = Modifier.padding(horizontal = Space.x2xl),
-                    horizontalArrangement = Arrangement.spacedBy(Space.md),
-                ) {
-                    QSActionTile(
-                        icon = LucideImage,
-                        label = stringResource(R.string.scan_image),
-                        onClick = { imagePicker.launch(pickImageRequest()) },
-                        modifier = Modifier.weight(1f),
-                    )
-                    QSActionTile(
-                        icon = LucideClipboardPaste,
-                        label = stringResource(R.string.paste_link),
-                        onClick = { viewModel.setPasteOpen(true) },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-
-            if (state.pasteOpen) {
-                item {
-                    PasteLinkCard(
-                        value = state.pasteText,
-                        canSubmit = state.canSubmitPaste,
-                        onValueChange = viewModel::onPasteChanged,
-                        onSubmit = viewModel::submitPaste,
-                        onDismiss = { viewModel.setPasteOpen(false) },
-                        modifier = Modifier.padding(horizontal = Space.x2xl),
-                    )
-                }
-            }
-
-            if (state.recent.isNotEmpty()) {
-                item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = Space.x2xl),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.recent_scans),
-                            style = text.label11,
-                            color = palette.inkFaint,
-                        )
-                        Text(
-                            text = stringResource(R.string.see_all),
-                            style = text.label11,
-                            color = palette.accentTintInk,
-                            modifier = Modifier.clickable(onClick = onOpenHistory),
-                        )
-                    }
-                }
-
-                items(state.recent, key = { it.id }) { scan ->
-                    val type = runCatching { PayloadType.valueOf(scan.type) }
-                        .getOrDefault(PayloadType.Text)
-                    val (tileBackground, tileInk) = payloadTileColors(type)
-
-                    QSListRow(
-                        icon = type.icon,
-                        iconTint = tileInk,
-                        iconBackground = tileBackground,
-                        title = scan.title,
-                        subtitle = "${stringResource(type.labelRes)} · " +
-                            ScanDates.relative(scan.createdAt),
-                        background = palette.bg,
-                        modifier = Modifier.padding(horizontal = Space.x2xl),
-                        onClick = { onOpenResult(scan.id) },
-                    )
-                }
-            }
-
-            item { Spacer(Modifier.height(tabBarClearance())) }
+        // Pasting used to be a tile under the viewfinder. With the camera
+        // full-bleed it is a sheet over it, so the action survives.
+        if (state.pasteOpen) {
+            PasteLinkCard(
+                value = state.pasteText,
+                canSubmit = state.canSubmitPaste,
+                onValueChange = viewModel::onPasteChanged,
+                onSubmit = viewModel::submitPaste,
+                onDismiss = { viewModel.setPasteOpen(false) },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(
+                        start = Space.x2xl,
+                        end = Space.x2xl,
+                        bottom = tabBarClearance() + Space.xxl,
+                    ),
+            )
         }
     }
 
@@ -359,7 +258,6 @@ fun ScannerScreen(
         onSelect = onTabSelected,
         modifier = Modifier.align(Alignment.BottomCenter),
     )
-    }
 }
 
 private fun pickImageRequest() =
@@ -384,18 +282,20 @@ private fun Viewfinder(
     onFlip: () -> Unit,
     onGallery: () -> Unit,
     onShutter: () -> Unit,
+    onPaste: () -> Unit,
     zoom: ZoomState,
     onStepZoom: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val palette = QsTheme.palette
+    // The camera now runs under the status bar, so the pills that sit over it
+    // inset themselves rather than relying on a spacer above the viewfinder.
+    val inset = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
 
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .height(466.dp)
-            // The camera surface would otherwise bleed past the viewfinder and
-            // paint over the headline below it.
+            // The camera surface bleeds past whatever box it is given, so it
+            // has to be clipped or it paints over the chrome above it.
             .clipToBounds()
             .background(palette.scene),
     ) {
@@ -437,7 +337,7 @@ private fun Viewfinder(
             enabled = autoDetect && hasPermission,
             modifier = Modifier
                 .align(Alignment.TopStart)
-                .padding(20.dp),
+                .padding(start = 20.dp, top = inset + 20.dp),
         )
 
         // Without this, not navigating looks like the app hanging. It sits
@@ -446,7 +346,7 @@ private fun Viewfinder(
             ContinuousPill(
                 modifier = Modifier
                     .align(Alignment.TopStart)
-                    .padding(start = 20.dp, top = 58.dp),
+                    .padding(start = 20.dp, top = inset + 58.dp),
             )
         }
 
@@ -455,19 +355,15 @@ private fun Viewfinder(
             visible = hintVisible,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 108.dp),
+                .padding(bottom = tabBarClearance() + 124.dp),
         )
 
         if (hasPermission) {
-            Box(
+            ViewfinderPill(
+                onClick = onTorch,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 20.dp, end = 20.dp)
-                    .size(56.dp, 32.dp)
-                    .clip(Radius.lg)
-                    .background(Color.White.copy(alpha = 0.08f))
-                    .clickable(onClick = onTorch),
-                contentAlignment = Alignment.Center,
+                    .padding(top = inset + 20.dp, end = 20.dp),
             ) {
                 Icon(
                     imageVector = LucideZap,
@@ -483,7 +379,24 @@ private fun Viewfinder(
                     onClick = onStepZoom,
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(top = 60.dp, end = 20.dp),
+                        .padding(top = inset + 60.dp, end = 20.dp),
+                )
+            }
+
+            ViewfinderPill(
+                onClick = onPaste,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(
+                        top = inset + if (zoom.isAvailable) 100.dp else 60.dp,
+                        end = 20.dp,
+                    ),
+            ) {
+                Icon(
+                    imageVector = LucideClipboardPaste,
+                    contentDescription = stringResource(R.string.paste_link),
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
@@ -502,7 +415,9 @@ private fun Viewfinder(
                 onGallery = onGallery,
                 onShutter = onShutter,
                 onFlip = onFlip,
-                modifier = Modifier.align(Alignment.BottomCenter),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = tabBarClearance() + Space.lg),
             )
         }
     }
@@ -612,20 +527,39 @@ private fun ConfidenceHint(
  * continuous control; this makes the feature discoverable rather than hidden
  * in a gesture.
  */
+/**
+ * The chrome sitting over the viewfinder. Torch, zoom and paste are the same
+ * box by construction rather than by two numbers that happen to agree.
+ */
+@Composable
+private fun ViewfinderPill(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Box(
+        modifier = modifier
+            .size(PILL_WIDTH, PILL_HEIGHT)
+            .clip(Radius.lg)
+            .background(Color.White.copy(alpha = 0.08f))
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
+    }
+}
+
+private val PILL_WIDTH = 56.dp
+private val PILL_HEIGHT = 32.dp
+
 @Composable
 private fun ZoomPill(ratio: Float, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val palette = QsTheme.palette
     val zoomDescription = stringResource(R.string.zoom_control, Zoom.label(ratio))
 
-    Box(
-        modifier = modifier
-            .clip(Radius.lg)
-            .background(Color.White.copy(alpha = 0.08f))
-            .clickable(onClick = onClick)
-            // Hoisted: the semantics block is not a composable scope.
-            .semantics { contentDescription = zoomDescription }
-            .padding(horizontal = 13.dp, vertical = 7.dp),
-        contentAlignment = Alignment.Center,
+    ViewfinderPill(
+        onClick = onClick,
+        modifier = modifier.semantics { contentDescription = zoomDescription },
     ) {
         Text(
             text = Zoom.label(ratio),
@@ -866,7 +800,6 @@ private fun PasteLinkCard(
 }
 
 /** Item index of the paste card: viewfinder, headline, tiles, paste. */
-private const val PASTE_CARD_ITEM = 3
 
 private const val TONE_VOLUME = 80
 

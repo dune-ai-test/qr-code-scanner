@@ -71,7 +71,6 @@ fun QuickScanNavHost(
         composable(Routes.SCAN) {
             ScannerScreen(
                 onOpenResult = { navController.navigate(Routes.result(it)) },
-                onOpenHistory = { selectTab(TabDestination.History) },
                 onTabSelected = ::selectTab,
             )
         }
