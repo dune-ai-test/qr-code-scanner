@@ -98,9 +98,16 @@ import com.quickscan.core.ui.theme.Space
 import com.quickscan.data.barcode.PayloadType
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import com.quickscan.data.barcode.ScanConfidence
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.runtime.mutableLongStateOf
+import android.os.SystemClock
 import kotlinx.coroutines.withContext
 
 private const val SAMPLE_QR_SEED = 20_240_919L
+
+/** How long after a successful scan the "hold steady" hint stays suppressed. */
+private const val HINT_HOLD_MILLIS = 1_200L
 
 
 @Composable
@@ -165,6 +172,14 @@ fun ScannerScreen(
     }
 
     val zoom by controller.zoom.collectAsStateWithLifecycle()
+    val confidence by controller.confidence.collectAsStateWithLifecycle()
+
+    // While a code is being read the hint is noise, so it is held off for a
+    // moment after each accepted scan. Confidence is republished about ten
+    // times a second, so the hold takes effect on the very next frame.
+    var hintHoldUntil by remember { mutableLongStateOf(0L) }
+    val hintVisible = state.autoDetect &&
+        SystemClock.elapsedRealtime() >= hintHoldUntil
     val toneGenerator = remember {
         runCatching {
             ToneGenerator(AudioManager.STREAM_NOTIFICATION, TONE_VOLUME)
@@ -189,6 +204,7 @@ fun ScannerScreen(
                 is ScannerEvent.CopyToClipboard -> context.copyToClipboard(event.text)
                 is ScannerEvent.Message -> context.showToast(event.text)
                 is ScannerEvent.SignalScanFeedback -> {
+                    hintHoldUntil = SystemClock.elapsedRealtime() + HINT_HOLD_MILLIS
                     if (event.vibrate) {
                         haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                     }
@@ -216,6 +232,8 @@ fun ScannerScreen(
                     torchOn = state.torchOn,
                     autoDetect = state.autoDetect,
                     continuousMode = state.continuousMode,
+                    confidence = confidence,
+                    hintVisible = hintVisible,
                     onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                     onOpenSettings = context::openAppSettings,
                     onTorch = {
@@ -358,6 +376,8 @@ private fun Viewfinder(
     torchOn: Boolean,
     autoDetect: Boolean,
     continuousMode: Boolean,
+    confidence: ScanConfidence,
+    hintVisible: Boolean,
     onRequestPermission: () -> Unit,
     onOpenSettings: () -> Unit,
     onTorch: () -> Unit,
@@ -429,6 +449,14 @@ private fun Viewfinder(
                     .padding(start = 20.dp, top = 58.dp),
             )
         }
+
+        ConfidenceHint(
+            confidence = confidence,
+            visible = hintVisible,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 108.dp),
+        )
 
         if (hasPermission) {
             Box(
@@ -516,6 +544,60 @@ private fun Reticle(color: Color, modifier: Modifier = Modifier) {
                 .offset(y = start + travel * offsetFraction)
                 .shadow(7.dp, CircleShape, clip = false)
                 .background(color, CircleShape),
+        )
+    }
+}
+
+/**
+ * Says the code is nearly readable.
+ *
+ * Without this, a scan that is not working looks exactly like a scan of
+ * nothing: the viewfinder sits there, silent, whether the camera has found a
+ * code and cannot quite read it or has found nothing at all. The first is
+ * worth three words of feedback and the second is not, so the finder-pattern
+ * count decides which it is.
+ */
+@Composable
+private fun ConfidenceHint(
+    confidence: ScanConfidence,
+    visible: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val reducedMotion = rememberReducedMotion()
+    val shown = visible && confidence != ScanConfidence.Nothing
+    // Confidence flips between frames, so without a fade the hint strobes.
+    val fade by animateFloatAsState(
+        targetValue = if (shown) 1f else 0f,
+        animationSpec = tween(if (reducedMotion) 0 else 180),
+        label = "hintFade",
+    )
+    if (fade <= 0.01f) return
+
+    Row(
+        modifier = modifier
+            .graphicsLayer { alpha = fade }
+            .clip(Radius.pill)
+            .background(Color.Black.copy(alpha = 0.55f))
+            .padding(horizontal = Space.lg, vertical = Space.sm),
+        horizontalArrangement = Arrangement.spacedBy(Space.xs),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = LucideScanLine,
+            contentDescription = null,
+            tint = Color.White,
+            modifier = Modifier.size(14.dp),
+        )
+        Text(
+            text = stringResource(
+                if (confidence == ScanConfidence.Framed) {
+                    R.string.hold_steady_aligned
+                } else {
+                    R.string.hold_steady
+                },
+            ),
+            style = QsTheme.text.rowSub12.copy(fontWeight = FontWeight.SemiBold),
+            color = Color.White,
         )
     }
 }

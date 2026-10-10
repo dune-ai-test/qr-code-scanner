@@ -44,6 +44,10 @@ Everything the build contains today.
   Code 128, Code 39, Code 93, ITF, Codabar
 - **Centre-crop decoding** with a full-frame fallback, plus a retry on
   inverted frames for light-on-dark codes
+- **Decode confidence** — a "Hold steady" hint that appears while a decode
+  keeps failing, driven by how many QR finder patterns are visible. Turns a
+  scan that is not working into feedback instead of silence; see
+  [Decode confidence](#decode-confidence)
 - **FrameGate** and **full-resolution escalation** — see [Scanning](#scanning)
 - **Deep links** — `geo:`, `tel:`, `sms:` and `mailto:` are instructions
   rather than addresses, so each gets its own result type and its own action
@@ -171,7 +175,8 @@ Kotlin · Jetpack Compose · Hilt · CameraX · ZXing core · Room · DataStore 
 
 The GitHub Actions workflow in `.github/workflows/android.yml` is the build. Every push to `main` and every pull request runs:
 
-- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`, `Zoom`, `SelectionScope`, `RepeatGate`, `DeepLinkParser`)
+- unit tests (`PayloadParser`, `QrPlaceholder`, `ScanRepository`, `LumaRotation`, `FrameGate`, `Zoom`, `SelectionScope`, `RepeatGate`, `DeepLinkParser`,
+  `FinderPatternScan`)
 - `lintDebug`
 - `assembleDebug`
 
@@ -270,6 +275,50 @@ so holding one code for six seconds wrote a second history row for it.
 That is the kind of bug that only shows up in a feature nobody has used
 yet, which is why the window is now shorter than the dedupe it sits on.
 
+## Decode confidence
+
+A failed decode says nothing about *why* it failed. The viewfinder looks the
+same whether the camera has found a code and cannot quite read it, or has
+found nothing at all — which is what makes a scan that is not working feel
+like a dead end rather than something you can act on.
+
+`FinderPatternScan` looks at what a QR code is made of. A finder pattern is a
+7×7 concentric square whose dark/light runs measure 1:1:3:1:1, so scanning a
+handful of scanlines for that ratio says how much of a code is in frame. One
+or two patterns means something is arriving; three means a whole code is
+framed and a decode is close behind. The viewfinder says "Hold steady" for
+either, and nothing when there is genuinely nothing there.
+
+ZXing runs this same state machine while trying to read a code, but only
+surfaces the result once a decode has already succeeded — the opposite of
+when it is useful. Doing it here means the answer arrives while the decode is
+still failing, which is the only time it is worth anything.
+
+Three things are deliberately not done:
+
+- **No cross-checks.** ZXing verifies that three candidate patterns really do
+  form a QR code before believing them. Only the count matters here, not the
+  position, so that work is skipped — which is why the centre run is held to
+  half a module rather than ZXing's three. At three, a 1:1:2:1:1 run passes
+  as a pattern and the ratio stops carrying any weight on its own.
+- **No perspective transform.** "How many" is a much easier question than
+  "where and at what angle", and costs about a tenth of the work.
+- **No 1D barcodes.** A finder pattern is a QR idea. An EAN-13 in frame gets
+  no hint, which is honest: the signal does not exist for that symbology, and
+  inventing one would be a guess dressed as feedback.
+
+The scan runs on the same geometry the decoder reads — same width, height,
+row stride and origin — because a confidence measured against different pixels
+from the ones the decoder sees would be describing a different frame. It
+reads fourteen scanlines out of the luma plane by absolute index, so nothing
+is copied but those lines.
+
+`tools/check_confidence.py` mirrors the state machine and replays every case
+in `FinderPatternScanTest` against synthetic scanlines. A finder pattern has a
+fixed shape, so a row containing one can be written down exactly rather than
+photographed. What no test reaches is how often this agrees with a real code
+at a real angle, which is the part only a device can answer.
+
 ## Deep links
 
 `geo:`, `tel:`, `sms:` and `mailto:` are instructions, not addresses. A scanner
@@ -342,8 +391,8 @@ Worth knowing before trusting any of this on a device.
   unit tests, but the most recent features — PNG export, the style panel,
   What's new, favourites, bulk actions, per-type bulk actions, launcher
   shortcuts, Geist, camera zoom, continuous mode, deep links, the clipboard
-  policy and the scanning budget — have not been seen on a screen, because no
-  phone was connected while they were written.
+  policy, decode confidence and the scanning budget — have not been seen on a
+  screen, because no phone was connected while they were written.
 - **Live auto-detection is unconfirmed** on real hardware. The shutter
   path, which uses the same decoder, is proven: it reads a photographed
   QR end to end. The live path additionally goes through `FrameGate`,

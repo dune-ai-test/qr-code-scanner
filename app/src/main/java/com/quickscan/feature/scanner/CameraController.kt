@@ -20,6 +20,8 @@ import androidx.lifecycle.LifecycleOwner
 import com.quickscan.data.barcode.DecodedCode
 import com.quickscan.core.qr.DecodeImages
 import com.quickscan.data.barcode.FrameGate
+import com.quickscan.data.barcode.FinderPatternScan
+import com.quickscan.data.barcode.ScanConfidence
 import com.quickscan.data.barcode.ZxingDecoder
 import java.nio.ByteBuffer
 import androidx.compose.runtime.Immutable
@@ -84,6 +86,14 @@ class CameraController(
      * usually still.
      */
     private val frameGate = FrameGate()
+
+    /**
+     * How close the last analysed frame is to reading. Published so the
+     * viewfinder can say something while a decode keeps failing, which is
+     * otherwise indistinguishable from pointing at nothing.
+     */
+    private val _confidence = MutableStateFlow(ScanConfidence.Nothing)
+    val confidence: StateFlow<ScanConfidence> = _confidence.asStateFlow()
 
     @Volatile
     private var paused: Boolean = false
@@ -270,6 +280,11 @@ class CameraController(
                 return
             }
 
+            // Read the confidence before decoding: it explains a failure, and
+            // by the time the decode has failed the caller has already shown
+            // nothing at all.
+            publishConfidence(image)
+
             val code = decoder.decode(image)
             if (code != null) {
                 frameGate.onDecoded()
@@ -287,6 +302,52 @@ class CameraController(
             decoding.set(false)
             image.close()
         }
+    }
+
+    /**
+     * Reads a few scanlines out of the luma plane and reports how close the
+     * frame is to reading.
+     *
+     * The geometry here is deliberately identical to [ZxingDecoder]'s: same
+     * width, height and row stride, same origin at zero. A confidence
+     * measured against different pixels from the ones the decoder sees would
+     * be describing a different frame, and the two would disagree exactly when
+     * it matters.
+     *
+     * A camera whose plane cannot be indexed is not a reason to take the
+     * scanner down, so anything unexpected leaves the hint off rather than
+     * propagating out of the analysis thread.
+     */
+    private fun publishConfidence(image: ImageProxy) {
+        val confidence = runCatching { readConfidence(image) }
+            .getOrDefault(ScanConfidence.Nothing)
+        _confidence.value = confidence
+    }
+
+    private fun readConfidence(image: ImageProxy): ScanConfidence {
+        val plane = image.planes[0]
+        val buffer = plane.buffer
+        val width = image.width
+        val height = image.height
+        val rowStride = plane.rowStride
+        if (width <= 0 || height <= 0 || rowStride <= 0) return ScanConfidence.Nothing
+
+        val step = (height / FinderPatternScan.LINE_COUNT).coerceAtLeast(1)
+        val rows = ArrayList<ByteArray>(FinderPatternScan.LINE_COUNT)
+        for (line in 0 until FinderPatternScan.LINE_COUNT) {
+            val y = line * step
+            if (y >= height) break
+            // Absolute reads, so the buffer's position never matters and no
+            // row has to be copied in full.
+            if (y * rowStride + width > buffer.limit()) return ScanConfidence.Nothing
+            val row = ByteArray(width)
+            var index = y * rowStride
+            for (x in 0 until width) {
+                row[x] = buffer.get(index + x)
+            }
+            rows += row
+        }
+        return FinderPatternScan.scan(rows, width)
     }
 
     /** A cheap signature over a sparse slice of the plane, without copying it. */

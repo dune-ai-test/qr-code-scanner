@@ -44,6 +44,8 @@
     <string name="scanner_subhead">QR, EAN, Data Matrix and Wi-Fi codes are detected the moment they enter the frame.</string>
     <string name="auto_detect">Auto-detect</string>
     <string name="continuous_mode">Continuous</string>
+    <string name="hold_steady">Hold steady</string>
+    <string name="hold_steady_aligned">Hold steady — almost there</string>
     <string name="scanned_saved">%1$s saved</string>
     <string name="scanned_saved_named">%1$s · %2$s</string>
     <string name="toggle_torch">Toggle torch</string>

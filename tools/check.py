@@ -138,9 +138,13 @@ def main():
 
         # Type positions only: an annotation, a generic argument, `is`, or a
         # constructor call. Anything looser drowns in false positives.
+        #
+        # The trailing \b matters: without it `[A-Za-z0-9]+` stops at an
+        # underscore, so `width < MIN_WIDTH` matched as a reference to `MIN`
+        # and every other error in the file was reported alongside it.
         candidates = set()
-        candidates |= set(re.findall(r':\s*([A-Z][A-Za-z0-9]+)', code))
-        candidates |= set(re.findall(r'<\s*([A-Z][A-Za-z0-9]+)', code))
+        candidates |= set(re.findall(r':\s*([A-Z][A-Za-z0-9]+)\b', code))
+        candidates |= set(re.findall(r'<\s*([A-Z][A-Za-z0-9]+)\b', code))
         candidates |= set(re.findall(r'\bis\s+([A-Z][A-Za-z0-9]+)', code))
         candidates |= set(re.findall(r'(?<![\w.])([A-Z][A-Za-z0-9]+)\s*\(', code))
         candidates -= set(re.findall(r'\.\s*([A-Z][A-Za-z0-9]+)\s*\(', code))
