@@ -1,12 +1,5 @@
 package com.quickscan.feature.result
 
-/**
- * The extra messaging apps read for a pre-filled SMS body. It is not in
- * [android.content.Intent], because it is not part of the platform contract —
- * it is a convention every SMS app has settled on independently.
- */
-private const val SMS_BODY_EXTRA = "sms_body"
-
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -82,6 +75,13 @@ import com.quickscan.core.ui.theme.Radius
 import com.quickscan.core.ui.theme.Space
 import com.quickscan.data.barcode.PayloadType
 import com.quickscan.data.barcode.ScannedPayload
+
+/**
+ * The extra messaging apps read for a pre-filled SMS body. It is not in
+ * [android.content.Intent], because it is not part of the platform contract —
+ * it is a convention every SMS app has settled on independently.
+ */
+private const val SMS_BODY_EXTRA = "sms_body"
 
 @Composable
 fun ResultScreen(

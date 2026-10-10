@@ -113,6 +113,30 @@ def main():
         if " import import " in src:
             problems.append("%s: malformed import line" % rel)
 
+        # Kotlin requires every import to precede every declaration. A const
+        # added just below the package line reads as a tidy place for it and
+        # fails the compile with "imports are only allowed in the beginning of
+        # file", which names the file and not the line.
+        #
+        # The test is "a declaration appears before the last import", not
+        # "after the first one" — the class at the bottom of a file is exactly
+        # where a declaration belongs.
+        lines = src.split("\n")
+        last_import = max(
+            (n for n, line in enumerate(lines, 1) if line.startswith("import ")),
+            default=None,
+        )
+        if last_import:
+            declaration = re.compile(
+                r'\s*(private\s+|internal\s+|public\s+|abstract\s+|open\s+)*'
+                r'(const\s+)?(val|var|fun|class|object|interface|enum|sealed)\b')
+            for number, line in enumerate(lines[:last_import - 1], 1):
+                if declaration.match(line):
+                    problems.append(
+                        "%s:%d: declaration before an import; Kotlin requires "
+                        "every import first" % (rel, number))
+                    break
+
         for name in re.findall(r'R\.string\.(\w+)', src):
             if name not in strings:
                 problems.append("%s: R.string.%s does not exist" % (rel, name))
