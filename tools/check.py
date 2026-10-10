@@ -137,6 +137,38 @@ def main():
                         "every import first" % (rel, number))
                     break
 
+        # A file that reads R.string but never imports it fails with an
+        # "Unresolved reference 'R'" that names no cause. AppTypeface did this
+        # for the vendored fonts for several commits.
+        if re.search(r'(?<![\w.])R\.(string|font|drawable|color|dimen|style|'
+                     r'array|mipmap|xml|integer|bool)\b', src) \
+                and "import com.quickscan.R\n" not in src:
+            problems.append("%s: uses R.<resource> without importing com.quickscan.R" % rel)
+
+        # semantics { } gives a SemanticsPropertyReceiver, not a composable
+        # scope, so a stringResource() inside one is a compile error that
+        # reads as an unrelated "invocations can only happen from the context
+        # of a @Composable function".
+        for match in re.finditer(r'semantics\s*\{', src):
+            block = src[match.end():match.end() + 400]
+            depth, end = 1, None
+            for i, ch in enumerate(block):
+                if ch == '{':
+                    depth += 1
+                elif ch == '}':
+                    depth -= 1
+                    if depth == 0:
+                        end = i
+                        break
+            inner = block[:end] if end is not None else block
+            line_no = src[:match.start()].count("\n") + 1
+            for call in re.findall(r'\b(stringResource|remember|mutableStateOf|'
+                                   r'viewModel|qsText|palette)\b', inner):
+                problems.append(
+                    "%s:%d: %s() inside a semantics block; hoist it above, the "
+                    "block is not a composable scope" % (rel, line_no, call))
+                break
+
         for name in re.findall(r'R\.string\.(\w+)', src):
             if name not in strings:
                 problems.append("%s: R.string.%s does not exist" % (rel, name))

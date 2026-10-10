@@ -47,9 +47,12 @@ object QrBatchRenderer {
             textSize = LABEL_TEXT_PX
             textAlign = Paint.Align.CENTER
         }
-        val missing = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        // Named apart from the `style` parameter on purpose: inside apply, a
+        // lexical parameter wins over the Paint receiver, so `style =` would
+        // quietly assign the QrStyle and fail to compile.
+        val missingStroke = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = MISSING_COLOUR
-            style = Paint.Style.STROKE
+            this.style = Paint.Style.STROKE
             strokeWidth = 4f
         }
 
@@ -74,7 +77,7 @@ object QrBatchRenderer {
                     ),
                     16f,
                     16f,
-                    missing,
+                    missingStroke,
                 )
             }
 

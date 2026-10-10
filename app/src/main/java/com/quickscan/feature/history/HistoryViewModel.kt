@@ -82,7 +82,10 @@ class HistoryViewModel @Inject constructor(
 
     // combine() has typed overloads only up to five flows, so the controls
     // fold into one flow before being merged with the scans.
-    private val controls: Flow<List<Any>> = combine(
+    // One element is nullable — the type scope is null for "no narrowing" —
+    // so the fold is List<Any?>, and the casts below are what turn each entry
+    // back into its own type.
+    private val controls: Flow<List<Any?>> = combine(
         filter,
         query,
         searchOpen,

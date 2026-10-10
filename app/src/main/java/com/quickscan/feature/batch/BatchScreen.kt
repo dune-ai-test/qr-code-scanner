@@ -34,7 +34,6 @@ import com.quickscan.core.qr.BatchPayloads
 import com.quickscan.core.qr.QrBatchRenderer
 import com.quickscan.core.qr.QrExporter
 import com.quickscan.core.qr.QrStyle
-import com.quickscan.core.ui.component.LucideDownload
 import com.quickscan.core.ui.component.LucideLayoutGrid
 import com.quickscan.core.ui.component.LucideShare2
 import com.quickscan.core.ui.component.QSNavBar
@@ -77,7 +76,7 @@ fun BatchScreen(onBack: () -> Unit) {
             val bitmap = withContext(Dispatchers.Default) {
                 QrBatchRenderer.render(items, style)
             }
-            sheet = Sheet(items, bitmap)
+            if (bitmap != null) sheet = Sheet(items, bitmap)
         } finally {
             building = false
         }
@@ -213,7 +212,6 @@ fun BatchScreen(onBack: () -> Unit) {
                                     ).show()
                                 }
                         },
-                        icon = LucideDownload,
                         modifier = Modifier.weight(1f),
                     )
                 }

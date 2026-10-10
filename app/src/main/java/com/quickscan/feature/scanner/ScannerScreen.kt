@@ -615,15 +615,15 @@ private fun ConfidenceHint(
 @Composable
 private fun ZoomPill(ratio: Float, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val palette = QsTheme.palette
+    val zoomDescription = stringResource(R.string.zoom_control, Zoom.label(ratio))
 
     Box(
         modifier = modifier
             .clip(Radius.lg)
             .background(Color.White.copy(alpha = 0.08f))
             .clickable(onClick = onClick)
-            .semantics {
-                contentDescription = stringResource(R.string.zoom_control, Zoom.label(ratio))
-            }
+            // Hoisted: the semantics block is not a composable scope.
+            .semantics { contentDescription = zoomDescription }
             .padding(horizontal = 13.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center,
     ) {
