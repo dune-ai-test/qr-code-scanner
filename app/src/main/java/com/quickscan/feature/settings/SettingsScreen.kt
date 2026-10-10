@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -33,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
@@ -376,10 +378,28 @@ fun SettingsScreen(
     )
 
     if (showRetention) {
+        // The Box has no contentAlignment, so a sheet with no modifier of its
+        // own lands in the top-left corner and reads as a page change. Every
+        // overlay in a Box has to place itself.
+        BackHandler { showRetention = false }
+
+        Box(
+            modifier = Modifier
+                .matchParentSize()
+                .background(Color.Black.copy(alpha = 0.32f))
+                .clickable(
+                    onClickLabel = stringResource(R.string.setting_cancel),
+                    onClick = { showRetention = false },
+                ),
+        )
+
         RetentionSheet(
             current = state.retentionDays,
             onPick = viewModel::setRetentionDays,
             onDismiss = { showRetention = false },
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(horizontal = Space.md),
         )
     }
 
