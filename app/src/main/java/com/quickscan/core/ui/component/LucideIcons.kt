@@ -829,3 +829,46 @@ val LucideZap = lucide("Zap") {
     horizontalLineTo(13.089f)
     close()
 }
+
+
+val LucideSquareCheck = lucide("SquareCheck") {
+    moveTo(5f, 3f)
+    lineTo(19f, 3f)
+    arcTo(2f, 2f, 0f, false, true, 21f, 5f)
+    lineTo(21f, 19f)
+    arcTo(2f, 2f, 0f, false, true, 19f, 21f)
+    lineTo(5f, 21f)
+    arcTo(2f, 2f, 0f, false, true, 3f, 19f)
+    lineTo(3f, 5f)
+    arcTo(2f, 2f, 0f, false, true, 5f, 3f)
+    close()
+    moveTo(16f, 9f)
+    lineTo(10.5f, 14.5f)
+    lineTo(8f, 12f)
+}
+
+
+val LucideX = lucide("X") {
+    moveTo(18f, 6f)
+    lineTo(6f, 18f)
+    moveTo(6f, 6f)
+    lineTo(18f, 18f)
+}
+
+
+val LucideBookmarkCheck = lucide("BookmarkCheck") {
+    moveTo(17f, 3f)
+    arcTo(2f, 2f, 0f, false, true, 19f, 5f)
+    verticalLineTo(20f)
+    arcTo(1f, 1f, 0f, false, true, 17.504f, 20.868f)
+    lineTo(12.992f, 18.29f)
+    arcTo(2f, 2f, 0f, false, false, 11.008f, 18.29f)
+    lineTo(6.496f, 20.868f)
+    arcTo(1f, 1f, 0f, false, true, 5f, 20f)
+    verticalLineTo(5f)
+    arcTo(2f, 2f, 0f, false, true, 7f, 3f)
+    close()
+    moveTo(9f, 10f)
+    lineTo(11f, 12f)
+    lineTo(15f, 8f)
+}

@@ -16,7 +16,7 @@ import com.quickscan.core.ui.component.QSIconTile
 import com.quickscan.core.ui.component.LucideChevronRight
 import com.quickscan.core.ui.component.LucideBookmark
 import com.quickscan.core.ui.component.LucideCheck
-import com.quickscan.core.ui.component.LucideCheckSquare
+import com.quickscan.core.ui.component.LucideSquareCheck
 import com.quickscan.core.ui.component.LucideShare2
 import com.quickscan.core.ui.component.LucideTrash2
 import com.quickscan.core.ui.component.LucideX
@@ -319,6 +319,7 @@ fun HistoryScreen(
 }
 
 /** One history row, shared by the favourites section and the date groups. */
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ScanRow(
     scan: ScanEntity,
@@ -435,7 +436,7 @@ private fun SelectionBar(
         )
 
         SelectionAction(
-            icon = LucideCheckSquare,
+            icon = LucideSquareCheck,
             label = stringResource(R.string.select_all),
             onClick = onSelectAll,
         )

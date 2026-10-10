@@ -279,6 +279,9 @@ ICON_NAMES = [
     "scan-search", "search", "settings", "share-2", "shield-check", "signal",
     "smartphone", "sparkles", "trash-2", "type", "user", "video", "volume-2",
     "wifi", "wifi-off", "zap",
+    # Added later for selection controls; Lucide spells these square-check,
+    # x and bookmark-check, not check-square or bookmark-check-alt.
+    "square-check", "x", "bookmark-check",
 ]
 
 

@@ -147,7 +147,7 @@ def main():
         # A bare capitalised argument: .clip(CircleShape)
         candidates |= set(re.findall(r'\(\s*([A-Z][A-Za-z0-9]+)\s*[),]', code))
         # The right-hand side of an assignment: val x = LocalContext.current
-        candidates |= set(re.findall(r'=\s*([A-Z][A-Za-z0-9]+)\s*[.(]', code))
+        candidates |= set(re.findall(r'=\s*([A-Z][A-Za-z0-9]+)\s*[.,)(]', code))
 
         for name in candidates:
             if name not in known:
