@@ -53,6 +53,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -305,8 +306,9 @@ fun HistoryScreen(
                 onDismissRequest = { confirmDelete = false },
                 title = {
                     Text(
-                        stringResource(
-                            R.string.delete_selected_title,
+                        pluralStringResource(
+                            R.plurals.delete_selected_title,
+                            state.scopedSelection.size,
                             state.scopedSelection.size,
                         ),
                     )
@@ -339,7 +341,11 @@ fun HistoryScreen(
             LaunchedEffect(deletedCount) {
                 Toast.makeText(
                     context,
-                    context.getString(R.string.deleted_selected, deletedCount),
+                    context.resources.getQuantityString(
+                        R.plurals.deleted_selected,
+                        deletedCount,
+                        deletedCount,
+                    ),
                     Toast.LENGTH_SHORT,
                 ).show()
                 deletedCount = 0
@@ -350,12 +356,13 @@ fun HistoryScreen(
             LaunchedEffect(toastCount, toastPinned) {
                 Toast.makeText(
                     context,
-                    context.getString(
+                    context.resources.getQuantityString(
                         if (toastPinned) {
-                            R.string.pinned_selected
+                            R.plurals.pinned_selected
                         } else {
-                            R.string.unpinned_selected
+                            R.plurals.unpinned_selected
                         },
+                        toastCount,
                         toastCount,
                     ),
                     Toast.LENGTH_SHORT,
@@ -646,6 +653,9 @@ private fun EmptyHistory(
     val text = QsTheme.text
 
     Column(
+        // Scrollable because the suggestions do not fit a short screen and the
+        // tab bar floats over the bottom of it. The trailing spacer is what
+        // makes the last row clear the bar once scrolled to the end.
         modifier = modifier
             .fillMaxWidth()
             .verticalScroll(rememberScrollState()),

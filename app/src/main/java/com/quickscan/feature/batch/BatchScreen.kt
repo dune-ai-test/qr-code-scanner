@@ -26,6 +26,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
@@ -149,7 +150,11 @@ fun BatchScreen(onBack: () -> Unit) {
                 )
 
                 else -> Text(
-                    text = stringResource(R.string.batch_ready, state.items.size),
+                    text = pluralStringResource(
+                        R.plurals.batch_ready,
+                        state.items.size,
+                        state.items.size,
+                    ),
                     style = text.rowSub12,
                     color = palette.inkFaint,
                 )
@@ -176,8 +181,9 @@ fun BatchScreen(onBack: () -> Unit) {
                         .padding(top = Space.sm),
                 )
                 Text(
-                    text = stringResource(
-                        R.string.batch_sheet_size,
+                    text = pluralStringResource(
+                        R.plurals.batch_sheet_size,
+                        state.items.size,
                         state.items.size,
                         built.width,
                         built.height,
