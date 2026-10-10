@@ -130,7 +130,5 @@ dependencies {
     androidTestImplementation(libs.androidx.test.runner)
     androidTestImplementation(libs.androidx.test.rules)
     androidTestImplementation(libs.androidx.ui.test.junit4)
-    androidTestImplementation(libs.androidx.hilt.navigation.testing)
-    kspAndroidTest(libs.hilt.android.testing)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
