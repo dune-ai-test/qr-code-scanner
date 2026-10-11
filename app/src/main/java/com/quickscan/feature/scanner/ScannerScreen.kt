@@ -29,6 +29,7 @@ import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -247,7 +248,14 @@ fun ScannerScreen(
                     .padding(
                         start = Space.x2xl,
                         end = Space.x2xl,
-                        bottom = tabBarClearance() + Space.xxl,
+                        // The window does not resize for the keyboard over a
+                        // full-bleed camera, so the card has to clear the IME
+                        // itself. When it is closed the tab bar is the taller
+                        // of the two and sets the floor.
+                        bottom = WindowInsets.ime
+                            .asPaddingValues()
+                            .calculateBottomPadding()
+                            .coerceAtLeast(tabBarClearance() + Space.xxl),
                     ),
             )
         }
