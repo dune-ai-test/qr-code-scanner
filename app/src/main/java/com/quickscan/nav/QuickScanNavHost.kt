@@ -39,9 +39,16 @@ fun QuickScanNavHost(
         val route = destination.route()
         if (route == currentRoute) return
         navController.navigate(route) {
-            popUpTo(Routes.SCAN) { inclusive = false; saveState = true }
+            // Everything stacked above a tab goes, never the tab itself.
+            //
+            // saveState/restoreState are for nested tab stacks and this graph
+            // has none — every tab is a sibling of Scan and is never popped, so
+            // its state is kept either way. With them set, tapping Scan from a
+            // result screen popped the result off the back stack and left the
+            // host still drawing it: pressing back then left the app, because
+            // Scan was the only entry left and nothing had repainted it.
+            popUpTo(Routes.SCAN) { inclusive = false }
             launchSingleTop = true
-            restoreState = true
         }
     }
 
