@@ -251,13 +251,13 @@ fun ScannerScreen(
                     ),
             )
         }
-    }
 
-    QSTabBar(
-        selected = TabDestination.Scan,
-        onSelect = onTabSelected,
-        modifier = Modifier.align(Alignment.BottomCenter),
-    )
+        QSTabBar(
+            selected = TabDestination.Scan,
+            onSelect = onTabSelected,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
 }
 
 private fun pickImageRequest() =
