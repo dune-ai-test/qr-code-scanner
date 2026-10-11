@@ -528,6 +528,12 @@ Worth knowing before trusting any of this on a device.
   built and its layout checked as arithmetic; whether sixty codes on
   one printed page actually read is a question only paper and a
   scanner can answer.
+- **Three layout changes shipped unverified.** The full-bleed scanner,
+  the bottom-sheet retention picker and the centred Settings headers
+  were all written against code and committed without ever being
+  rendered. Two of them fix things a screenshot had already shown to
+  be wrong, so the direction is known; whether they *look* right is
+  not.
 - **The signed release job has never run.** It needs the four keystore
   secrets above and a `v*` tag; it is the only path in CI with no
   execution history.

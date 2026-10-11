@@ -21,6 +21,36 @@ object ReleaseNotes {
     /** Newest first. */
     val entries: List<Entry> = listOf(
         Entry(
+            version = "1.3.0",
+            date = "October 2026",
+            highlights = listOf(
+                Highlight(
+                    title = "The camera fills the screen",
+                    detail = "The viewfinder is the app now, with the copy and the " +
+                        "list of recent scans taken off the front of it. Torch, " +
+                        "zoom and paste sit together in one corner.",
+                ),
+                Highlight(
+                    title = "Scanning no longer crashes",
+                    detail = "Opening the camera used to end the app a fraction " +
+                        "of a second later, on every phone. Fixed at the source " +
+                        "rather than caught.",
+                ),
+                Highlight(
+                    title = "Tap a scan to open it",
+                    detail = "Tapping a row in History did nothing. It now opens " +
+                        "the result, and still toggles a tick when you are " +
+                        "selecting several.",
+                ),
+                Highlight(
+                    title = "A picker that behaves like a picker",
+                    detail = "How long history is kept opens as a sheet at the " +
+                        "bottom of the screen, with the rest of Settings still " +
+                        "behind it.",
+                ),
+            ),
+        ),
+        Entry(
             version = "1.2.0",
             date = "October 2026",
             highlights = listOf(
