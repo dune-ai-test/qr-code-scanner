@@ -152,6 +152,16 @@ class ScannerViewModel @Inject constructor(
     fun setPasteOpen(open: Boolean) =
         _state.update { it.copy(pasteOpen = open, pasteText = "") }
 
+    /**
+     * Reads the current value inside [update] rather than being handed one by
+     * the caller. The composable's `state` is a snapshot, and a pill that
+     * says `setPasteOpen(!state.pasteOpen)` keeps flipping a stale copy: once
+     * it goes out of step, every tap asks to close a sheet that is not open
+     * and nothing appears to happen.
+     */
+    fun togglePaste() =
+        _state.update { it.copy(pasteOpen = !it.pasteOpen, pasteText = "") }
+
     fun submitPaste() {
         val text = _state.value.pasteText.trim()
         if (text.isEmpty()) {

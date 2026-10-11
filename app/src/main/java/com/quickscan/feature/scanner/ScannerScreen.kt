@@ -227,7 +227,7 @@ fun ScannerScreen(
                     controller.capture { code -> viewModel.onCaptured(code) }
                 }
             },
-            onPaste = { viewModel.setPasteOpen(!state.pasteOpen) },
+            onPaste = viewModel::togglePaste,
             zoom = zoom,
             onStepZoom = { controller.stepZoom() },
             modifier = Modifier.fillMaxSize(),
